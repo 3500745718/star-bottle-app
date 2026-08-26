@@ -1,0 +1,4767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1721">
+  <title>星星瓶子 ✦ 记忆</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="星星瓶子">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Reset & Base ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Noto Serif SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", serif;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    textarea, input { -webkit-user-select: text; user-select: text; }
+
+    /* ===== Sky Background ===== */
+    .sky {
+      position: fixed;
+      inset: 0;
+      background:
+        /* 极淡的暖色地平线微光，贴近纯黑夜空 */
+        radial-gradient(ellipse 90% 55% at 50% 105%, rgba(40,70,110,0.14) 0%, transparent 62%),
+        radial-gradient(ellipse 55% 40% at 50% 62%, rgba(55,40,95,0.10) 0%, transparent 72%),
+        radial-gradient(ellipse 42% 30% at 18% 22%, rgba(40,95,150,0.10) 0%, transparent 68%),
+        radial-gradient(ellipse 36% 26% at 85% 34%, rgba(80,55,120,0.09) 0%, transparent 68%),
+        linear-gradient(180deg, #020408 0%, #050a12 30%, #0a1420 52%, #070f19 72%, #020408 100%);
+      z-index: 0;
+    }
+    .sky::before {
+      /* 极淡的深空星云，几乎隐没于黑暗 */
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 28% 20% at 22% 26%, rgba(140,175,255,0.06), transparent 72%),
+        radial-gradient(ellipse 24% 17% at 78% 20%, rgba(190,150,255,0.05), transparent 72%),
+        radial-gradient(ellipse 32% 22% at 60% 78%, rgba(110,190,255,0.05), transparent 72%);
+      pointer-events: none;
+    }
+    .sky::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+    .stars-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+    .bg-star {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: twinkle var(--dur, 3s) ease-in-out infinite;
+      animation-delay: var(--delay, 0s);
+    }
+    .bg-star.s-white { background: #fff; box-shadow: 0 0 6px rgba(255,255,255,0.95); }
+    .bg-star.s-warm { background: #fff4da; box-shadow: 0 0 8px rgba(255,228,170,0.9); }
+    .bg-star.s-blue { background: #e2f0ff; box-shadow: 0 0 8px rgba(180,215,255,0.9); }
+    .bg-star.big {
+      box-shadow: 0 0 16px var(--glow, rgba(255,255,255,0.95));
+      /* 大亮星增加十字星芒 */
+    }
+    .bg-star.big::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 300%;
+      height: 1px;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(90deg, transparent, var(--glow, rgba(255,255,255,0.6)), transparent);
+      opacity: 0.6;
+      border-radius: 1px;
+    }
+    .bg-star.big::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 1px;
+      height: 300%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(180deg, transparent, var(--glow, rgba(255,255,255,0.6)), transparent);
+      opacity: 0.6;
+      border-radius: 1px;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.02; transform: scale(0.6); }
+      45% { opacity: var(--max-op, 0.9); transform: scale(1.25); }
+      60% { opacity: var(--mid-op, 0.5); transform: scale(1.05); }
+    }
+    /* ===== 流星特效 ===== */
+    .shooting-star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 8px 1px rgba(255,255,255,0.9);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    /* 拖尾：向左上延伸（流星朝右下划，尾迹留在后方） */
+    .shooting-star::before {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: -1px;
+      width: 130px;
+      height: 2px;
+      background: linear-gradient(270deg, rgba(255,255,255,0.9), rgba(180,210,255,0.25), transparent);
+      border-radius: 2px;
+      transform: rotate(20deg);
+      transform-origin: right center;
+    }
+    @keyframes meteor {
+      0%   { transform: translate(0, 0); opacity: 0; }
+      4%   { opacity: 1; }
+      16%  { transform: translate(120px, 60px); opacity: 1; }
+      24%  { transform: translate(200px, 100px); opacity: 0; }
+      100% { transform: translate(200px, 100px); opacity: 0; }
+    }
+    /* 行星微调，融入新背景 */
+    .planet {
+      position: absolute;
+      top: 7%;
+      right: 9%;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #dce8ff, #9ab6e8 55%, #5a78b8 100%);
+      box-shadow: 0 0 34px rgba(170,200,255,0.25), inset -6px -6px 12px rgba(20,30,60,0.3);
+      opacity: 0.6;
+      z-index: 1;
+    }
+    .planet::before {
+      content: '';
+      position: absolute;
+      top: 55%;
+      left: 20%;
+      width: 60%;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(10,20,40,0.2);
+    }
+
+    /* 月亮：柔和的上弦月，与星空自然融合 */
+    .moon {
+      position: absolute;
+      top: 6%;
+      right: 27%;
+      width: 64px;
+      height: 64px;
+      z-index: 1;
+      pointer-events: none;
+    }
+    /* 柔和光晕 */
+    .moon .halo {
+      position: absolute;
+      inset: -18px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,246,225,0.20) 0%, rgba(255,240,210,0.08) 45%, transparent 72%);
+      filter: blur(3px);
+    }
+    /* 月面 */
+    .moon .disc {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%, #fffdf4, #f5ecd8 55%, #e3d6bd 100%);
+      box-shadow: inset -7px -9px 16px rgba(180,160,130,0.35), 0 0 30px rgba(255,244,220,0.22);
+      overflow: hidden;
+    }
+    /* 暗面：制造上弦月 */
+    .moon .shadow {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 68% 50%, rgba(4,8,16,0.92) 0%, rgba(4,8,16,0.72) 42%, rgba(4,8,16,0.18) 70%, transparent 100%);
+    }
+    /* 月面环形山纹理 */
+    .moon .crater { position: absolute; border-radius: 50%; background: rgba(190,170,140,0.28); }
+    .moon .c1 { width: 12px; height: 12px; left: 26%; top: 30%; }
+    .moon .c2 { width: 7px; height: 7px; left: 52%; top: 58%; }
+    .moon .c3 { width: 5px; height: 5px; left: 40%; top: 66%; }
+    .moon .c4 { width: 9px; height: 9px; left: 62%; top: 34%; }
+
+    /* 适配小屏 */
+    @media (max-width: 480px) {
+      .moon { width: 48px; height: 48px; top: 4%; right: 22%; }
+      .moon .halo { inset: -12px; }
+    }
+
+    /* ===== DateTime Display ===== */
+    .datetime {
+      position: fixed;
+      top: max(20px, env(safe-area-inset-top));
+      left: max(20px, env(safe-area-inset-left));
+      z-index: 5;
+      color: rgba(245,230,211,0.7);
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.4s forwards;
+    }
+    .datetime .date-text {
+      font-family: "ZCOOL KuaiLe", "Noto Serif SC", sans-serif;
+      font-size: 15px;
+      color: rgba(245,230,211,0.85);
+      letter-spacing: 1px;
+    }
+    .datetime .time-text {
+      font-size: 12px;
+      color: rgba(245,230,211,0.5);
+      letter-spacing: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .datetime .lunar-text {
+      font-size: 11px;
+      color: rgba(245,230,211,0.5);
+      letter-spacing: 1px;
+      margin-top: 3px;
+    }
+    .datetime .lunar-text .lunar-fest { color: #ff9a8a; }
+    .datetime .festival-text {
+      display: none;
+      font-size: 12px;
+      color: #ff9a8a;
+      letter-spacing: 1px;
+      margin-top: 4px;
+      font-family: "ZCOOL KuaiLe", "Noto Serif SC", sans-serif;
+      text-shadow: 0 0 12px rgba(255,154,138,0.35);
+    }
+    .datetime .sign-text {
+      font-size: 11px;
+      color: rgba(245,230,211,0.45);
+      letter-spacing: 0.5px;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+    .datetime .sign-text .sign-lead { color: rgba(212,165,116,0.75); }
+    .datetime .stats-text {
+      font-size: 11px;
+      color: rgba(245,230,211,0.4);
+      letter-spacing: 0.5px;
+      margin-top: 3px;
+      line-height: 1.5;
+    }
+    .datetime .stats-text b { color: #d4a574; font-weight: 600; }
+    .datetime .stats-text .stats-sep { margin: 0 5px; opacity: 0.4; }
+
+    /* ===== Main Scene ===== */
+    .scene {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      animation: sceneIn 1s ease 0.3s forwards;
+    }
+    @keyframes sceneIn { to { opacity: 1; } }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .bottle-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bottle-container {
+      width: min(260px, 62vw);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      animation: floatBottle 5s ease-in-out infinite;
+    }
+    .bottle-container:active { transform: scale(0.97); }
+    .bottle-container.jiggle { animation: bottleJiggle 0.4s ease, floatBottle 5s ease-in-out 0.4s infinite; }
+    @keyframes floatBottle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+    @keyframes bottleJiggle {
+      0%, 100% { transform: rotate(0deg) translateY(0); }
+      20% { transform: rotate(-2deg) translateY(-3px); }
+      60% { transform: rotate(2deg) translateY(-2px); }
+      80% { transform: rotate(-1deg) translateY(0); }
+    }
+    .bottle-svg { width: 100%; height: auto; display: block; }
+
+    .star-count {
+      margin-top: 18px;
+      color: rgba(245,230,211,0.6);
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .star-count span { color: #d4a574; font-weight: 700; font-size: 16px; }
+    .sync-status {
+      margin-top: 6px;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: rgba(190,210,240,0.45);
+      min-height: 14px;
+    }
+
+    .hint {
+      margin-top: 10px;
+      color: rgba(245,230,211,0.35);
+      font-size: 13px;
+      letter-spacing: 3px;
+      animation: hintPulse 3s ease-in-out infinite;
+    }
+    @keyframes hintPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.7; }
+    }
+
+    /* ===== 瓶子问候语 ===== */
+    .greeting {
+      max-width: 86vw;
+      margin-bottom: 26px;
+      padding: 10px 22px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.16);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      color: rgba(255,246,232,0.92);
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      text-align: center;
+      line-height: 1.6;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(-10px);
+      animation: greetingIn 0.9s cubic-bezier(0.34,1.4,0.64,1) 0.5s forwards;
+      font-family: "ZCOOL KuaiLe", "Noto Serif SC", sans-serif;
+    }
+    .greeting .g-emo { margin-right: 4px; }
+    @keyframes greetingIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Star Float & Shake ===== */
+    .star-inner {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: starFloat 4s ease-in-out infinite;
+    }
+    @keyframes starFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-1.5px) rotate(2deg); }
+    }
+    .star-inner.star-shake {
+      animation: starShake 0.7s ease-in-out;
+    }
+    @keyframes starShake {
+      0%, 100% { transform: translate(0,0) rotate(0deg); }
+      15% { transform: translate(-7px,5px) rotate(-18deg); }
+      35% { transform: translate(6px,-4px) rotate(14deg); }
+      55% { transform: translate(-5px,-6px) rotate(-10deg); }
+      75% { transform: translate(7px,4px) rotate(16deg); }
+    }
+
+    .bottle-container.big-shake {
+      animation: bottleShake 0.7s ease-in-out;
+    }
+    @keyframes bottleShake {
+      0%, 100% { transform: rotate(0deg) translate(0,0); }
+      15% { transform: rotate(-5deg) translate(-7px,2px); }
+      35% { transform: rotate(5deg) translate(7px,-2px); }
+      55% { transform: rotate(-4deg) translate(-6px,1px); }
+      75% { transform: rotate(4deg) translate(6px,-1px); }
+    }
+
+    /* ===== Shake Button (desktop only) ===== */
+    .shake-btn {
+      margin-top: 14px;
+      padding: 8px 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(212,165,116,0.4);
+      background: rgba(212,165,116,0.12);
+      color: rgba(245,230,211,0.75);
+      font-size: 13px;
+      font-family: inherit;
+      letter-spacing: 2px;
+      cursor: pointer;
+      display: none;
+      transition: all 0.2s;
+    }
+    .shake-btn:hover {
+      background: rgba(212,165,116,0.25);
+      color: #fff;
+    }
+    .shake-btn:active { transform: scale(0.95); }
+    body.is-desktop .shake-btn { display: inline-block; }
+
+    /* ===== Overlays & Modals ===== */
+    .overlay, .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.active, .modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Menu Overlay */
+    .menu-overlay {
+      background: rgba(15,12,22,0.55);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+    .menu-card {
+      display: flex;
+      gap: 20px;
+      transform: scale(0.85) translateY(20px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .menu-overlay.active .menu-card { transform: scale(1) translateY(0); }
+    .menu-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 24px 28px;
+      background: rgba(245,240,232,0.08);
+      border: 1.5px solid rgba(245,230,211,0.2);
+      border-radius: 20px;
+      color: #f5e6d3;
+      font-family: "ZCOOL KuaiLe", "Noto Serif SC", sans-serif;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      min-width: 110px;
+    }
+    .menu-btn:active, .menu-btn:hover {
+      background: rgba(245,240,232,0.15);
+      border-color: rgba(212,165,116,0.5);
+      transform: translateY(-2px);
+    }
+    .menu-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .menu-btn.write-btn .menu-icon { color: #d4a574; }
+    .menu-btn.view-btn .menu-icon { color: #e8c39e; }
+    .menu-btn.more-btn .menu-icon { color: #b8a6d9; }
+
+    /* Write Modal */
+    .write-modal { background: rgba(15,12,22,0.72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .write-paper {
+      width: min(440px, 92vw);
+      max-height: 88vh;
+      background:
+        repeating-linear-gradient(transparent, transparent 30px, rgba(180,160,130,0.1) 31px),
+        linear-gradient(135deg, #faf6ef 0%, #f3ede2 100%);
+      border-radius: 16px;
+      padding: 24px 22px 20px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .write-modal.active .write-paper { transform: scale(1) translateY(0); }
+
+    /* ===== Write Modal 环境特效 ===== */
+    .write-fx {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: transparent;
+      transition: background 0.8s ease;
+    }
+    .write-fx.on-happy   { background: radial-gradient(ellipse at 50% 20%, rgba(255,214,120,0.20), transparent 55%), radial-gradient(ellipse at 80% 90%, rgba(255,150,80,0.12), transparent 50%); }
+    .write-fx.on-sad     { background: radial-gradient(ellipse at 50% 0%, rgba(70,90,120,0.35), transparent 60%), linear-gradient(180deg, rgba(60,75,100,0.25), rgba(40,50,70,0.18)); }
+    .write-fx.on-angry   { background: radial-gradient(ellipse at 50% 100%, rgba(255,80,30,0.18), transparent 60%), radial-gradient(ellipse at 20% 20%, rgba(200,40,20,0.12), transparent 50%); }
+    .write-fx.on-calm    { background: radial-gradient(ellipse at 50% 40%, rgba(120,220,200,0.14), transparent 55%), radial-gradient(ellipse at 20% 80%, rgba(100,180,220,0.10), transparent 50%); }
+    .write-fx.on-anxious { background: radial-gradient(ellipse at 50% 30%, rgba(150,110,200,0.14), transparent 55%); }
+    .write-fx.on-tired   { background: radial-gradient(ellipse at 50% 50%, rgba(120,120,130,0.10), transparent 60%); }
+
+    .write-fx canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    /* 生气时纸片轻微抖动；焦虑时纸片轻微颤动 */
+    .write-modal.em-anxious .write-paper { animation: paperAnxious 0.5s ease-in-out infinite; }
+    @keyframes paperAnxious {
+      0%,100% { transform: scale(1) translateY(0) rotate(0deg); }
+      25% { transform: scale(1) translateY(0.5px) rotate(0.15deg); }
+      75% { transform: scale(1) translateY(-0.5px) rotate(-0.15deg); }
+    }
+    .write-modal.em-angry .write-paper { animation: paperAngry 0.5s ease-in-out infinite; }
+    @keyframes paperAngry {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(0.995); }
+    }
+
+    .paper-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1.5px solid rgba(180,160,130,0.2);
+    }
+    .paper-datetime { color: #6b5d4f; }
+    .paper-datetime #writeDate {
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      font-size: 17px;
+      letter-spacing: 1px;
+      color: #4a3d2f;
+    }
+    .paper-datetime #writeTime {
+      font-size: 12px;
+      color: #9a8d7f;
+      letter-spacing: 2px;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(107,93,79,0.1);
+      color: #6b5d4f;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .close-btn:active { background: rgba(107,93,79,0.2); transform: scale(0.92); }
+
+    .emotion-section { margin-bottom: 16px; }
+    .section-label {
+      font-size: 13px;
+      color: #9a8d7f;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+    .emotion-selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .emotion-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      padding: 12px 4px 10px;
+      border-radius: 14px;
+      border: 2px solid rgba(180,160,130,0.15);
+      background: rgba(255,255,255,0.4);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .emotion-btn .emo-star { width: 26px; height: 26px; transition: transform 0.25s; }
+    .emotion-btn .emo-label {
+      font-size: 12px;
+      color: #6b5d4f;
+      letter-spacing: 0.5px;
+    }
+    .emotion-btn:active { transform: scale(0.95); }
+    .emotion-btn.selected {
+      border-color: var(--emo-color);
+      background: rgba(255,255,255,0.7);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .emotion-btn.selected .emo-star { transform: scale(1.15) rotate(10deg); }
+    .emotion-btn.selected .emo-label { color: var(--emo-color); font-weight: 700; }
+
+    .text-section { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    #letterText {
+      width: 100%;
+      flex: 1;
+      min-height: 140px;
+      max-height: 40vh;
+      border: none;
+      background: transparent;
+      resize: none;
+      font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif;
+      font-size: 15px;
+      line-height: 31px;
+      color: #3d2b1f;
+      outline: none;
+      padding: 4px 2px;
+    }
+    #letterText::placeholder { color: #c4b8a8; font-size: 14px; }
+
+    .fold-btn {
+      margin-top: 14px;
+      padding: 13px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #d4a574, #c08850);
+      color: #fff;
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      font-size: 16px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px rgba(192,136,80,0.3);
+    }
+    .fold-btn:active { transform: scale(0.97); }
+    .fold-btn:disabled {
+      opacity: 0.4;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* View Modal */
+    .view-modal { background: rgba(15,12,22,0.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .view-container {
+      width: min(640px, 94vw);
+      max-height: 88vh;
+      background: linear-gradient(135deg, #1e1a28 0%, #251f33 100%);
+      border: 1px solid rgba(212,165,116,0.15);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .view-modal.active .view-container { transform: scale(1) translateY(0); }
+    .view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(245,230,211,0.08);
+    }
+    .view-header h2 {
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      font-size: 18px;
+      color: #f5e6d3;
+      letter-spacing: 2px;
+    }
+    .view-header .close-btn {
+      background: rgba(245,230,211,0.08);
+      color: #f5e6d3;
+    }
+    .view-header .close-btn:active { background: rgba(245,230,211,0.15); }
+
+    /* View filters */
+    .view-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 18px 4px;
+    }
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      background: rgba(245,230,211,0.06);
+      border: 1px solid rgba(245,230,211,0.15);
+      border-radius: 10px;
+      padding: 6px 10px;
+      color: #f5e6d3;
+    }
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #f5e6d3;
+      font-size: 13px;
+      font-family: inherit;
+      margin-left: 6px;
+    }
+    .search-box input::placeholder { color: rgba(245,230,211,0.35); }
+    .filter-chip {
+      padding: 5px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(245,230,211,0.15);
+      background: rgba(245,230,211,0.05);
+      color: rgba(245,230,211,0.6);
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .filter-chip.active {
+      background: var(--chip-c, rgba(212,165,116,0.25));
+      border-color: var(--chip-c, #d4a574);
+      color: #fff;
+    }
+    .filter-chip.pinned.active { --chip-c: #d4a574; }
+    .filter-chip.starred.active { --chip-c: #e6b84f; }
+    .filter-chip.all.active { --chip-c: rgba(212,165,116,0.35); }
+    .stat-badge {
+      margin-left: auto;
+      font-size: 12px;
+      color: rgba(245,230,211,0.45);
+    }
+
+    .letters-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 18px 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .letters-list::-webkit-scrollbar { width: 4px; }
+    .letters-list::-webkit-scrollbar-thumb { background: rgba(212,165,116,0.2); border-radius: 2px; }
+
+    .letter-card {
+      background: linear-gradient(135deg, #faf6ef, #f3ede2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border-left: 4px solid var(--emo-color);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(12px);
+      animation: cardIn 0.4s ease forwards;
+      position: relative;
+    }
+    .letter-card.pinned-card { border-left-width: 6px; }
+    .letter-card.pinned-card::before {
+      content: '📌';
+      position: absolute;
+      top: -8px;
+      left: 14px;
+      font-size: 15px;
+      transform: rotate(-8deg);
+    }
+    @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .card-date-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .card-star { width: 18px; height: 18px; flex-shrink: 0; }
+    .card-date { font-size: 12px; color: #9a8d7f; font-variant-numeric: tabular-nums; }
+    .card-emotion {
+      font-size: 11px;
+      padding: 2px 9px;
+      border-radius: 10px;
+      background: var(--emo-color);
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 4px 0 2px;
+    }
+    .card-tag {
+      font-size: 11px;
+      color: #7a6a58;
+      background: rgba(150,130,100,0.12);
+      border-radius: 8px;
+      padding: 1px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .card-tag button {
+      border: none;
+      background: transparent;
+      color: #9a8d7f;
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .card-content {
+      font-size: 14px;
+      color: #3d2b1f;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .card-content::-webkit-scrollbar { width: 3px; }
+    .card-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+
+    /* Card action row */
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      border-top: 1px dashed rgba(150,130,100,0.2);
+      padding-top: 8px;
+    }
+    .card-act-btn {
+      font-size: 12px;
+      padding: 4px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(150,130,100,0.25);
+      background: rgba(255,255,255,0.4);
+      color: #6b5d4f;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .card-act-btn:hover { border-color: var(--emo-color); color: var(--emo-color); }
+    .card-act-btn.on { background: var(--emo-color); color: #fff; border-color: var(--emo-color); }
+    .card-act-btn.danger:hover { border-color: #c0392b; color: #c0392b; }
+    .card-act-btn.edit-mode { background: var(--emo-color); color: #fff; border-color: var(--emo-color); }
+
+    /* Edit mode */
+    .card-edit-title {
+      font-size: 12px;
+      color: #9a8d7f;
+      margin: 6px 0 4px;
+    }
+    .card-edit-emotions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .card-edit-emo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 2px solid rgba(150,130,100,0.15);
+      cursor: pointer;
+      background: rgba(255,255,255,0.4);
+      transition: all 0.2s;
+    }
+    .card-edit-emo.selected { border-color: var(--emo-color); background: rgba(255,255,255,0.7); }
+    .card-edit-emo .emo-label { font-size: 11px; color: #6b5d4f; }
+    .card-edit-emo.selected .emo-label { color: var(--emo-color); font-weight: 700; }
+    .card-edit-content {
+      width: 100%;
+      border: 1px solid rgba(150,130,100,0.2);
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #3d2b1f;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+      outline: none;
+    }
+    .card-edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .card-edit-save {
+      background: var(--emo-color);
+      color: #fff;
+      border: none;
+    }
+    .card-edit-cancel {
+      background: rgba(150,130,100,0.15);
+      color: #9a8d7f;
+      border: none;
+    }
+    .tag-input-row { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+    .tag-input {
+      flex: 1;
+      border: 1px solid rgba(150,130,100,0.2);
+      background: rgba(255,255,255,0.6);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      color: #3d2b1f;
+      font-family: inherit;
+      outline: none;
+    }
+    .tag-add-btn {
+      background: var(--emo-color);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Resolution */
+    .card-resolution {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(150,130,100,0.2);
+    }
+    .resolution-label {
+      font-size: 11px;
+      color: #9a8d7f;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .resolution-label::before {
+      content: '✦';
+      color: var(--emo-color);
+      font-size: 10px;
+    }
+    .resolution-text {
+      font-size: 13px;
+      color: #5a4a3a;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: rgba(255,255,255,0.5);
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+    .resolution-input {
+      width: 100%;
+      background: rgba(255,255,255,0.6);
+      border: 1px solid rgba(150,130,100,0.2);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 13px;
+      color: #3d2b1f;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 44px;
+      outline: none;
+      line-height: 1.5;
+    }
+    .resolution-input:focus {
+      border-color: rgba(212,165,116,0.5);
+      background: rgba(255,255,255,0.8);
+    }
+    .resolution-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .res-btn {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .res-btn-save {
+      background: var(--emo-color);
+      color: #fff;
+    }
+    .res-btn-save:hover { opacity: 0.85; }
+    .res-btn-cancel {
+      background: rgba(150,130,100,0.15);
+      color: #9a8d7f;
+    }
+    .res-btn-cancel:hover { background: rgba(150,130,100,0.25); }
+    .res-btn-edit {
+      background: transparent;
+      color: #9a8d7f;
+      padding: 2px 8px;
+      font-size: 11px;
+      border: 1px solid rgba(150,130,100,0.2);
+    }
+    .res-btn-edit:hover { border-color: var(--emo-color); color: var(--emo-color); }
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: rgba(245,230,211,0.4);
+      text-align: center;
+    }
+    .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
+    .empty-state p { font-size: 14px; letter-spacing: 1px; line-height: 1.8; }
+
+    /* More (Manage) Modal */
+    .more-modal { background: rgba(15,12,22,0.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .more-container {
+      width: min(520px, 92vw);
+      max-height: 85vh;
+      background: linear-gradient(135deg, #1e1a28 0%, #251f33 100%);
+      border: 1px solid rgba(212,165,116,0.15);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .more-modal.active .more-container { transform: scale(1) translateY(0); }
+    .more-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(245,230,211,0.08);
+    }
+    .more-header h2 {
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      font-size: 18px;
+      color: #f5e6d3;
+      letter-spacing: 2px;
+    }
+    .more-header .close-btn { background: rgba(245,230,211,0.08); color: #f5e6d3; }
+    .more-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+    .more-section { margin-bottom: 22px; }
+    .more-section-title {
+      font-size: 13px;
+      color: rgba(245,230,211,0.5);
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .more-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .more-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 18px 12px;
+      background: rgba(245,240,232,0.06);
+      border: 1.5px solid rgba(245,230,211,0.15);
+      border-radius: 14px;
+      color: #f5e6d3;
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .more-item:hover, .more-item:active {
+      background: rgba(245,240,232,0.12);
+      border-color: rgba(212,165,116,0.5);
+    }
+    .more-item .mi-icon { font-size: 26px; }
+
+    /* ===== 情侣空间 / 主界面天数徽章 ===== */
+    .couple-badge {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      animation: fadeIn 0.8s ease 0.6s backwards;
+    }
+    .couple-badge .day-heart {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(231,76,60,0.18), rgba(231,76,60,0.08));
+      border: 1.5px solid rgba(231,76,60,0.4);
+      color: #f7c7c0;
+      font-size: 15px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 18px rgba(231,76,60,0.12);
+    }
+    .couple-badge .day-heart .heart {
+      font-size: 16px;
+      animation: heartbeat 1.4s ease-in-out infinite;
+    }
+    .couple-badge .day-num {
+      color: #ff9a8a;
+      font-weight: 700;
+      font-size: 19px;
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      margin: 0 2px;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      15% { transform: scale(1.25); }
+      30% { transform: scale(1); }
+      45% { transform: scale(1.18); }
+      60% { transform: scale(1); }
+    }
+    .couple-badge .next-anni {
+      font-size: 12px;
+      color: rgba(245,230,211,0.55);
+      letter-spacing: 1px;
+      text-align: center;
+    }
+    .couple-badge .next-anni b { color: #f5e6d3; font-weight: 600; }
+
+    /* 情侣空间 Modal 通用 */
+    .cp-modal { background: rgba(15,12,22,0.72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .cp-container {
+      width: min(560px, 94vw);
+      max-height: 88vh;
+      background: linear-gradient(135deg, #1e1a28 0%, #2a2040 100%);
+      border: 1px solid rgba(231,76,60,0.2);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .cp-modal.active .cp-container { transform: scale(1) translateY(0); }
+    .cp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 22px;
+      border-bottom: 1px solid rgba(245,230,211,0.08);
+    }
+    .cp-header h2 {
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      font-size: 18px;
+      color: #f5e6d3;
+      letter-spacing: 2px;
+    }
+    .cp-header .close-btn { background: rgba(245,230,211,0.08); color: #f5e6d3; }
+    .cp-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+    .cp-sub { font-size: 13px; color: rgba(245,230,211,0.55); margin: 16px 0 10px; letter-spacing: 1px; }
+    .cp-sub:first-child { margin-top: 0; }
+
+    /* 设置在一起日期 */
+    .cp-start-card {
+      background: linear-gradient(135deg, rgba(231,76,60,0.14), rgba(231,76,60,0.05));
+      border: 1.5px dashed rgba(231,76,60,0.4);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+    .cp-start-card .cp-label { font-size: 13px; color: rgba(245,230,211,0.7); margin-bottom: 10px; }
+    .cp-start-row { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
+    .cp-start-row input[type="date"] {
+      background: rgba(245,230,211,0.08);
+      border: 1px solid rgba(245,230,211,0.2);
+      color: #f5e6d3;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      color-scheme: dark;
+    }
+    .cp-btn {
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      transition: all 0.2s;
+    }
+    .cp-btn.primary { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+    .cp-btn.primary:hover { opacity: 0.88; }
+    .cp-btn.ghost { background: rgba(245,230,211,0.1); color: #f5e6d3; border: 1px solid rgba(245,230,211,0.2); }
+    .cp-btn.ghost:hover { background: rgba(245,230,211,0.18); }
+    .cp-btn.danger { background: rgba(231,76,60,0.15); color: #ff9a8a; }
+    .cp-btn.small { padding: 4px 10px; font-size: 12px; }
+    .cp-start-days {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #f5e6d3;
+    }
+    .cp-start-days b { color: #ff9a8a; font-size: 17px; font-family: "ZCOOL KuaiLe", sans-serif; }
+
+    /* 纪念日 */
+    .anni-list { display: flex; flex-direction: column; gap: 8px; }
+    .anni-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(245,230,211,0.05);
+      border: 1px solid rgba(245,230,211,0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .anni-item .ai-date { font-size: 13px; color: #ff9a8a; font-variant-numeric: tabular-nums; }
+    .anni-item .ai-title { font-size: 14px; color: #f5e6d3; flex: 1; }
+    .anni-item .ai-count { font-size: 12px; color: rgba(245,230,211,0.5); }
+    .anni-item .ai-del { border: none; background: transparent; color: rgba(245,230,211,0.4); cursor: pointer; font-size: 15px; }
+    .anni-item .ai-del:hover { color: #e74c3c; }
+    .anni-add-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .anni-add-row input {
+      flex: 1;
+      min-width: 90px;
+      background: rgba(245,230,211,0.06);
+      border: 1px solid rgba(245,230,211,0.2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: #f5e6d3;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .anni-add-row input::placeholder { color: rgba(245,230,211,0.35); }
+    .anni-add-row input[type="date"] { color-scheme: dark; flex: 0 0 140px; }
+
+    /* 专属事件记录 */
+    .evt-list { display: flex; flex-direction: column; gap: 10px; }
+    .evt-item {
+      background: rgba(245,230,211,0.05);
+      border: 1px solid rgba(245,230,211,0.12);
+      border-left: 4px solid #ff9a8a;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .evt-item .ei-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+    .evt-item .ei-title { font-size: 14px; color: #f5e6d3; font-weight: 600; }
+    .evt-item .ei-date { font-size: 11px; color: rgba(245,230,211,0.4); }
+    .evt-item .ei-note { font-size: 13px; color: rgba(245,230,211,0.75); line-height: 1.6; white-space: pre-wrap; }
+    .evt-item .ei-del { border: none; background: transparent; color: rgba(245,230,211,0.4); cursor: pointer; }
+    .evt-item .ei-del:hover { color: #e74c3c; }
+    .evt-add-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .evt-add-row input, .evt-add-row textarea {
+      background: rgba(245,230,211,0.06);
+      border: 1px solid rgba(245,230,211,0.2);
+      border-radius: 10px;
+      padding: 8px 12px;
+      color: #f5e6d3;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .evt-add-row input::placeholder, .evt-add-row textarea::placeholder { color: rgba(245,230,211,0.35); }
+    .evt-add-row input.ei-title-in { flex: 1; min-width: 100px; }
+    .evt-add-row input[type="date"] { color-scheme: dark; flex: 0 0 140px; }
+    .evt-add-row textarea.ei-note-in { flex-basis: 100%; min-height: 50px; resize: vertical; }
+
+    /* 愿望清单 */
+    .wish-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(245,230,211,0.05);
+      border: 1px solid rgba(245,230,211,0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+      transition: opacity 0.3s;
+    }
+    .wish-item.done { opacity: 0.55; }
+    .wish-item.done .wi-text { text-decoration: line-through; color: rgba(245,230,211,0.4); }
+    .wish-check {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(245,230,211,0.3);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .wish-item.done .wish-check { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+    .wish-item .wi-text { flex: 1; font-size: 14px; color: #f5e6d3; }
+    .wish-item .wi-del { border: none; background: transparent; color: rgba(245,230,211,0.4); cursor: pointer; }
+    .wish-item .wi-del:hover { color: #e74c3c; }
+    .wish-add-row { display: flex; gap: 8px; margin-top: 10px; }
+    .wish-add-row input { flex: 1; background: rgba(245,230,211,0.06); border: 1px solid rgba(245,230,211,0.2); border-radius: 10px; padding: 9px 12px; color: #f5e6d3; font-size: 13px; font-family: inherit; }
+    .wish-add-row input::placeholder { color: rgba(245,230,211,0.35); }
+    .wish-progress { margin-bottom: 14px; }
+    .wish-progress .wp-bar { height: 8px; background: rgba(245,230,211,0.08); border-radius: 5px; overflow: hidden; }
+    .wish-progress .wp-fill { height: 100%; background: linear-gradient(90deg, #e74c3c, #ff9a8a); border-radius: 5px; transition: width 0.4s; }
+    .wish-progress .wp-text { font-size: 12px; color: rgba(245,230,211,0.55); margin-top: 6px; text-align: right; }
+
+    /* 关系能量 */
+    .energy-card {
+      background: linear-gradient(135deg, rgba(231,76,60,0.12), rgba(231,76,60,0.03));
+      border: 1.5px solid rgba(231,76,60,0.25);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .energy-card .ec-label { font-size: 13px; color: rgba(245,230,211,0.6); letter-spacing: 1px; margin-bottom: 8px; }
+    .energy-card .ec-value { font-size: 40px; color: #ff9a8a; font-family: "ZCOOL KuaiLe", sans-serif; line-height: 1.1; }
+    .energy-card .ec-value span { font-size: 16px; color: rgba(245,230,211,0.5); }
+    .energy-bar { height: 12px; background: rgba(245,230,211,0.08); border-radius: 6px; overflow: hidden; margin: 12px 0 8px; }
+    .energy-bar .eb-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f4d03f, #e74c3c, #c0392b);
+      border-radius: 6px;
+      transition: width 0.6s;
+    }
+    .energy-card .ec-hint { font-size: 12px; color: rgba(245,230,211,0.5); }
+    .energy-break { display: flex; gap: 8px; margin-top: 8px; font-size: 12px; color: rgba(245,230,211,0.6); flex-wrap: wrap; justify-content: center; }
+    .energy-break .tag { padding: 3px 10px; border-radius: 10px; background: rgba(245,230,211,0.06); }
+    .energy-break .tag b { color: #ff9a8a; }
+
+    /* 空状态 */
+    .cp-empty { text-align: center; color: rgba(245,230,211,0.35); padding: 24px; font-size: 13px; }
+
+    /* 成就爱心 */
+    .cp-achievements { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .cp-ach-item {
+      background: rgba(245,230,211,0.05);
+      border: 1px solid rgba(245,230,211,0.1);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    .cp-ach-item .aa-icon { font-size: 22px; }
+    .cp-ach-item .aa-num { font-size: 18px; color: #ff9a8a; font-family: "ZCOOL KuaiLe", sans-serif; }
+    .cp-ach-item .aa-label { font-size: 11px; color: rgba(245,230,211,0.5); margin-top: 3px; }
+
+    /* ===== 主界面情侣快捷入口栏 ===== */
+    .home-quick {
+      margin-top: 22px;
+      margin-bottom: 18px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: flex-start;
+      animation: fadeIn 0.9s ease 0.8s backwards;
+    }
+    .hq-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+      width: 68px;
+      min-height: 96px;
+      padding: 12px 5px 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.16);
+      border-radius: 18px;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.34,1.4,0.64,1);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    }
+    .hq-item:hover, .hq-item:active {
+      background: rgba(255,255,255,0.15);
+      border-color: var(--hq-c, rgba(255,107,129,0.8));
+      transform: translateY(-5px);
+      box-shadow: 0 12px 26px rgba(0,0,0,0.32);
+    }
+    .hq-icon {
+      font-size: 24px;
+      line-height: 1;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.12)) drop-shadow(0 3px 6px rgba(0,0,0,0.35));
+      transition: transform 0.28s;
+    }
+    .hq-item:hover .hq-icon { transform: scale(1.18) rotate(-8deg); }
+    .hq-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.82);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .hq-badge {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(231,76,60,0.5);
+      border: 1.5px solid rgba(20,15,30,0.6);
+      font-family: "ZCOOL KuaiLe", sans-serif;
+    }
+    .hq-badge.hidden-badge { display: none; }
+    .hq-sub {
+      font-size: 9.5px;
+      color: var(--hq-c, rgba(245,230,211,0.55));
+      letter-spacing: 0.3px;
+      height: 12px;
+      line-height: 12px;
+      white-space: nowrap;
+    }
+    /* 快捷栏主容器（含天数徽章） */
+    .home-lower {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    /* 在一起天数徽章美化 */
+    .couple-badge {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      animation: fadeIn 0.8s ease 0.6s backwards;
+    }
+    .day-heart {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(231,76,60,0.20), rgba(231,76,60,0.06));
+      border: 1.5px solid rgba(231,76,60,0.45);
+      color: #f7c7c0;
+      font-size: 15px;
+      letter-spacing: 1px;
+      box-shadow: 0 0 24px rgba(231,76,60,0.15);
+      position: relative;
+      overflow: hidden;
+    }
+    .day-heart::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.15), transparent 60%);
+    }
+    .day-heart .heart { font-size: 17px; animation: heartbeat 1.4s ease-in-out infinite; }
+    .day-heart .day-num { color: #ff9a8a; font-weight: 700; font-size: 20px; font-family: "ZCOOL KuaiLe", sans-serif; margin: 0 2px; }
+
+    /* Import hidden file input */
+    .hidden-file { display: none; }
+
+
+
+    /* Confirm dialog */
+    .confirm-modal { background: rgba(10,8,15,0.6); z-index: 300; }
+    .confirm-box {
+      width: min(320px, 84vw);
+      background: linear-gradient(135deg, #201b2e, #2a2340);
+      border: 1px solid rgba(212,165,116,0.25);
+      border-radius: 16px;
+      padding: 22px 20px 18px;
+      text-align: center;
+      transform: scale(0.9);
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .confirm-modal.active .confirm-box { transform: scale(1); }
+    .confirm-title { font-size: 16px; color: #f5e6d3; margin-bottom: 10px; font-family: "ZCOOL KuaiLe", sans-serif; }
+    .confirm-text { font-size: 13px; color: rgba(245,230,211,0.7); line-height: 1.7; margin-bottom: 18px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+    .confirm-btn {
+      padding: 9px 22px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: "ZCOOL KuaiLe", sans-serif;
+      transition: all 0.2s;
+    }
+    .confirm-btn.ok { background: linear-gradient(135deg, #d4a574, #c08850); color: #fff; }
+    .confirm-btn.danger { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+    .confirm-btn.cancel { background: rgba(245,230,211,0.12); color: #f5e6d3; }
+    .confirm-btn:active { transform: scale(0.95); }
+
+    /* Stats Modal */
+    .stats-modal { background: rgba(15,12,22,0.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .stats-container {
+      width: min(560px, 92vw);
+      max-height: 88vh;
+      background: linear-gradient(135deg, #1e1a28 0%, #251f33 100%);
+      border: 1px solid rgba(212,165,116,0.15);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .stats-modal.active .stats-container { transform: scale(1) translateY(0); }
+    .stats-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+    .stats-section { margin-bottom: 20px; }
+    .stats-title { font-size: 14px; color: rgba(245,230,211,0.6); letter-spacing: 1px; margin-bottom: 12px; }
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .stat-num {
+      text-align: center;
+      background: rgba(245,230,211,0.06);
+      border-radius: 12px;
+      padding: 14px 8px;
+    }
+    .stat-num .v { font-size: 24px; color: #d4a574; font-weight: 700; font-family: "ZCOOL KuaiLe", sans-serif; }
+    .stat-num .l { font-size: 12px; color: rgba(245,230,211,0.5); margin-top: 4px; }
+    .pie-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; }
+    .pie-canvas { width: 150px; height: 150px; }
+    .pie-legend { display: flex; flex-direction: column; gap: 8px; }
+    .pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: rgba(245,230,211,0.8); }
+    .pie-legend-item .dot { width: 12px; height: 12px; border-radius: 3px; }
+    .pie-legend-item .pct { margin-left: auto; color: rgba(245,230,211,0.5); font-variant-numeric: tabular-nums; }
+
+    /* Bar chart for trend */
+    .bar-wrap { display: flex; align-items: flex-end; gap: 10px; height: 130px; padding-top: 10px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+    .bar-stack { width: 100%; max-width: 30px; display: flex; flex-direction: column; justify-content: flex-end; height: 100px; border-radius: 4px 4px 0 0; overflow: hidden; }
+    .bar-seg { width: 100%; }
+    .bar-label { font-size: 11px; color: rgba(245,230,211,0.55); margin-top: 5px; white-space: nowrap; }
+    .bar-count { font-size: 10px; color: rgba(245,230,211,0.4); margin-bottom: 3px; }
+
+    /* Calendar Modal */
+    .cal-modal { background: rgba(15,12,22,0.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .cal-container {
+      width: min(560px, 94vw);
+      max-height: 88vh;
+      background: linear-gradient(135deg, #1e1a28 0%, #251f33 100%);
+      border: 1px solid rgba(212,165,116,0.15);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .cal-modal.active .cal-container { transform: scale(1) translateY(0); }
+    .cal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .cal-nav-title { font-size: 16px; color: #f5e6d3; font-family: "ZCOOL KuaiLe", sans-serif; letter-spacing: 1px; }
+    .cal-nav-btn {
+      background: rgba(245,230,211,0.08);
+      color: #f5e6d3;
+      border: 1px solid rgba(245,230,211,0.15);
+      border-radius: 8px;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .cal-nav-btn:hover { background: rgba(245,230,211,0.15); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-dow { text-align: center; font-size: 11px; color: rgba(245,230,211,0.4); padding: 4px 0; }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: 13px;
+      color: rgba(245,230,211,0.7);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+      background: rgba(245,230,211,0.03);
+    }
+    .cal-day:hover { background: rgba(245,230,211,0.1); }
+    .cal-day.empty { cursor: default; background: transparent; }
+    .cal-day.today { border: 1px solid #d4a574; }
+    .cal-day.selected { background: rgba(212,165,116,0.25); color: #fff; }
+    .cal-dots { display: flex; gap: 2px; margin-top: 2px; }
+    .cal-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .cal-day-list { margin-top: 14px; }
+    .cal-day-title { font-size: 13px; color: rgba(245,230,211,0.6); margin-bottom: 8px; }
+    .cal-letter {
+      background: linear-gradient(135deg, #faf6ef, #f3ede2);
+      border-radius: 10px;
+      border-left: 4px solid var(--emo-color);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .cal-letter .cl-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .cal-letter .cl-emo { font-size: 11px; color: #fff; background: var(--emo-color); border-radius: 8px; padding: 1px 8px; }
+    .cal-letter .cl-time { font-size: 11px; color: #9a8d7f; }
+    .cal-letter .cl-content { font-size: 13px; color: #3d2b1f; line-height: 1.6; white-space: pre-wrap; word-break: break-word; max-height: 90px; overflow-y: auto; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(30,26,40,0.92);
+      border: 1px solid rgba(212,165,116,0.3);
+      color: #f5e6d3;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      max-width: 80vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Fold Animation Overlay */
+    .fold-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(15,12,22,0.75);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .fold-overlay.active { opacity: 1; pointer-events: auto; }
+    .fold-scene {
+      position: relative;
+      width: 200px;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .paper-fold {
+      width: 72px;
+      height: 90px;
+      background:
+        repeating-linear-gradient(transparent, transparent 16px, rgba(180,160,130,0.15) 17px),
+        linear-gradient(135deg, #faf6ef, #f0e8d8);
+      border-radius: 3px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      position: absolute;
+      opacity: 0;
+    }
+    .paper-fold.folding { animation: foldPaper 0.8s cubic-bezier(0.55, 0, 0.45, 1) forwards; }
+    @keyframes foldPaper {
+      0% { transform: scale(1) rotate(0deg); opacity: 1; }
+      25% { transform: scale(0.85) rotate(90deg); opacity: 0.95; }
+      50% { transform: scale(0.6) rotate(180deg); opacity: 0.8; border-radius: 20%; }
+      75% { transform: scale(0.4) rotate(270deg); opacity: 0.5; border-radius: 40%; }
+      100% { transform: scale(0.15) rotate(360deg); opacity: 0; border-radius: 50%; }
+    }
+    .star-fold {
+      position: absolute;
+      opacity: 0;
+      transform: scale(0);
+    }
+    .star-fold.appearing { animation: starAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    @keyframes starAppear {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      60% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .star-fold.dropping { animation: starDrop 0.9s cubic-bezier(0.4, 0, 0.6, 1) forwards; }
+    @keyframes starDrop {
+      0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+      30% { transform: translateY(50px) scale(0.9) rotate(15deg); opacity: 1; }
+      60% { transform: translateY(120px) scale(0.6) rotate(30deg); opacity: 0.7; }
+      100% { transform: translateY(220px) scale(0.1) rotate(45deg); opacity: 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .menu-card { flex-direction: column; gap: 14px; }
+      .menu-btn { flex-direction: row; min-width: 180px; padding: 16px 24px; }
+      .emotion-btn { padding: 10px 2px 8px; }
+      .emotion-btn .emo-star { width: 22px; height: 22px; }
+      .emotion-btn .emo-label { font-size: 11px; }
+      .planet { width: 40px; height: 40px; top: 5%; right: 7%; }
+      .more-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sky Background -->
+  <div class="sky"></div>
+  <div class="stars-bg" id="starsBg"></div>
+  <div class="planet"></div>
+  <div class="moon">
+    <div class="halo"></div>
+    <div class="disc">
+      <div class="shadow"></div>
+      <div class="crater c1"></div>
+      <div class="crater c2"></div>
+      <div class="crater c3"></div>
+      <div class="crater c4"></div>
+    </div>
+  </div>
+
+  <!-- DateTime -->
+  <div class="datetime">
+    <div class="date-text" id="dateText"></div>
+    <div class="time-text" id="timeText"></div>
+    <div class="lunar-text" id="lunarText"></div>
+    <div class="festival-text" id="festivalText"></div>
+    <div class="sign-text" id="signText"></div>
+    <div class="stats-text" id="statsText"></div>
+  </div>
+
+  <!-- Main Scene -->
+  <div class="scene" id="scene">
+    <div class="greeting" id="greeting"></div>
+    <div class="bottle-wrapper">
+      <div class="bottle-container" id="bottle">
+        <svg viewBox="0 0 240 260" xmlns="http://www.w3.org/2000/svg" class="bottle-svg">
+          <defs>
+            <!-- 玻璃主体：暖金底光 + 冷蓝环境光 通透渐变 -->
+            <linearGradient id="glassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="rgba(180,215,240,0.20)"/>
+              <stop offset="25%" stop-color="rgba(170,205,235,0.07)"/>
+              <stop offset="50%" stop-color="rgba(255,205,140,0.14)"/>
+              <stop offset="78%" stop-color="rgba(180,215,240,0.05)"/>
+              <stop offset="100%" stop-color="rgba(255,180,120,0.12)"/>
+            </linearGradient>
+            <!-- 玻璃内壁光泽 -->
+            <linearGradient id="glassSheen" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
+              <stop offset="12%" stop-color="rgba(255,255,255,0)"/>
+              <stop offset="60%" stop-color="rgba(255,255,255,0)"/>
+              <stop offset="88%" stop-color="rgba(255,255,255,0.10)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </linearGradient>
+            <!-- 软木塞木纹 -->
+            <linearGradient id="corkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#C99F7A"/>
+              <stop offset="18%" stop-color="#B98A63"/>
+              <stop offset="55%" stop-color="#A0714E"/>
+              <stop offset="100%" stop-color="#7A563C"/>
+            </linearGradient>
+            <!-- 蜡封 -->
+            <radialGradient id="waxGrad" cx="35%" cy="30%" r="80%">
+              <stop offset="0%" stop-color="#ff8a9c"/>
+              <stop offset="45%" stop-color="#ef5274"/>
+              <stop offset="100%" stop-color="#b82043"/>
+            </radialGradient>
+            <!-- 瓶内暖光 -->
+            <radialGradient id="innerGlow" cx="50%" cy="82%" r="45%">
+              <stop offset="0%" stop-color="rgba(255,210,140,0.22)"/>
+              <stop offset="55%" stop-color="rgba(255,190,120,0.08)"/>
+              <stop offset="100%" stop-color="rgba(255,190,120,0)"/>
+            </radialGradient>
+            <!-- 瓶口冷光 -->
+            <radialGradient id="mouthGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgba(170,210,255,0.20)"/>
+              <stop offset="100%" stop-color="rgba(170,210,255,0)"/>
+            </radialGradient>
+            <!-- 外部魔法光晕 -->
+            <radialGradient id="outerGlow" cx="50%" cy="52%" r="50%">
+              <stop offset="0%" stop-color="rgba(255,215,160,0.16)"/>
+              <stop offset="45%" stop-color="rgba(180,210,255,0.10)"/>
+              <stop offset="100%" stop-color="rgba(180,210,255,0)"/>
+            </radialGradient>
+            <!-- 底光影 -->
+            <radialGradient id="floorGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="rgba(255,200,140,0.30)"/>
+              <stop offset="100%" stop-color="rgba(255,200,140,0)"/>
+            </radialGradient>
+            <clipPath id="bottleClip">
+              <path d="M 50,65 L 50,177.1 L 52,179.1 L 54,181.1 L 56,183 L 58,184.8 L 60,186.6 L 62,188.3 L 64,190 L 66,191.6 L 68,193.1 L 70,194.6 L 72,196 L 74,197.4 L 76,198.7 L 78,199.9 L 80,201.1 L 82,202.2 L 84,203.3 L 86,204.3 L 88,205.2 L 90,206.1 L 92,206.9 L 94,207.7 L 96,208.3 L 98,209 L 100,209.6 L 102,210.1 L 104,210.5 L 106,210.9 L 108,211.2 L 110,211.5 L 112,211.7 L 114,211.9 L 116,212 L 118,212 L 120,212 L 122,212 L 124,211.9 L 126,211.7 L 128,211.5 L 130,211.2 L 132,210.9 L 134,210.5 L 136,210.1 L 138,209.6 L 140,209 L 142,208.3 L 144,207.7 L 146,206.9 L 148,206.1 L 150,205.2 L 152,204.3 L 154,203.3 L 156,202.2 L 158,201.1 L 160,199.9 L 162,198.7 L 164,197.4 L 166,196 L 168,194.6 L 170,193.1 L 172,191.6 L 174,190 L 176,188.3 L 178,186.6 L 180,184.8 L 182,183 L 184,181.1 L 186,179.1 L 188,177.1 L 190,177.1 L 190,65 Z"/>
+            </clipPath>
+          </defs>
+
+          <!-- 魔法光晕（冷蓝 + 暖金双层） -->
+          <ellipse cx="120" cy="142" rx="132" ry="114" fill="url(#outerGlow)"/>
+          <!-- 瓶底暖色光晕 -->
+          <ellipse cx="120" cy="214" rx="92" ry="14" fill="url(#floorGlow)"/>
+
+          <!-- 软木塞 -->
+          <rect x="96" y="6" width="48" height="18" rx="4.5" fill="url(#corkGrad)"/>
+          <!-- 木塞纹理线 -->
+          <path d="M 99,11 Q 120,9 141,12 M 100,16 Q 120,14 140,17" stroke="rgba(60,40,25,0.25)" stroke-width="1" fill="none"/>
+          <rect x="96" y="6" width="48" height="3.5" rx="4.5" fill="rgba(255,255,255,0.18)"/>
+          <!-- 麻绳缠绕 -->
+          <g stroke="#E8C99A" stroke-width="2.4" fill="none" opacity="0.95">
+            <path d="M 92,27 Q 120,24 148,27"/>
+            <path d="M 92,31 Q 120,28 148,31"/>
+          </g>
+          <!-- 麻绳结 + 垂坠 -->
+          <circle cx="146" cy="27" r="2.6" fill="#E8C99A"/>
+          <path d="M 146,29 Q 142,38 144,44" stroke="#E8C99A" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <!-- 爱心蜡封 -->
+          <path d="M 120,6.5
+                   C 120,6.5 118,3.6 114.8,3.6
+                   C 111.2,3.6 110,6.2 110,7.6
+                   C 110,10.4 113.6,12.4 120,16
+                   C 126.4,12.4 130,10.4 130,7.6
+                   C 130,6.2 128.8,3.6 125.2,3.6
+                   C 122,3.6 120,6.5 120,6.5 Z"
+                fill="url(#waxGrad)" stroke="rgba(140,20,45,0.35)" stroke-width="0.6"/>
+
+          <!-- 瓶口外沿 -->
+          <ellipse cx="120" cy="24" rx="24" ry="3" fill="rgba(180,215,240,0.10)" stroke="rgba(190,225,255,0.30)" stroke-width="0.9"/>
+          <ellipse cx="120" cy="23" rx="18" ry="2.2" fill="url(#mouthGlow)"/>
+
+          <!-- 玻璃瓶身主体 -->
+          <path d="M 98,26 L 98,44 Q 98,54 112,62 L 50,72
+                   L 50,179 L 52,181.1 L 54,183.1 L 56,185 L 58,186.8 L 60,188.6 L 62,190.3 L 64,192 L 66,193.6 L 68,195.1 L 70,196.6 L 72,198 L 74,199.4 L 76,200.7 L 78,201.9 L 80,203.1 L 82,204.2 L 84,205.3 L 86,206.3 L 88,207.2 L 90,208.1 L 92,208.9 L 94,209.7 L 96,210.3 L 98,211 L 100,211.6 L 102,212.1 L 104,212.5 L 106,212.9 L 108,213.2 L 110,213.5 L 112,213.7 L 114,213.9 L 116,214 L 118,214 L 120,214 L 122,214 L 124,213.9 L 126,213.7 L 128,213.5 L 130,213.2 L 132,212.9 L 134,212.5 L 136,212.1 L 138,211.6 L 140,211 L 142,210.3 L 144,209.7 L 146,208.9 L 148,208.1 L 150,207.2 L 152,206.3 L 154,205.3 L 156,204.2 L 158,203.1 L 160,201.9 L 162,200.7 L 164,199.4 L 166,198 L 168,196.6 L 170,195.1 L 172,193.6 L 174,192 L 176,190.3 L 178,188.6 L 180,186.8 L 182,185 L 184,183.1 L 186,181.1 L 188,179.1 L 190,177.1 L 190,72
+                   L 128,62 Q 142,54 142,44 L 142,26 Z"
+                fill="url(#glassGrad)" stroke="rgba(220,240,255,0.35)" stroke-width="1.3"/>
+          <!-- 玻璃内壁光泽层 -->
+          <path d="M 54,74 L 54,179 L 56,181 L 58,183 L 60,184.8 L 62,186.6 L 64,188.3 L 66,190 L 68,191.6 L 70,193.1 L 72,194.6 L 74,196 L 76,197.4 L 78,198.7 L 80,199.9 L 82,201.1 L 84,202.2 L 86,203.3 L 88,204.3 L 90,205.2 L 92,206.1 L 94,206.9 L 96,207.7 L 98,208.3 L 100,209 L 102,209.6 L 104,210.1 L 106,210.5 L 108,210.9 L 110,211.2 L 112,211.5 L 114,211.7 L 116,211.9 L 118,212 L 120,212 L 122,212 L 124,211.9 L 126,211.7 L 128,211.5 L 130,211.2 L 132,210.9 L 134,210.5 L 136,210.1 L 138,209.6 L 140,209 L 142,208.3 L 144,207.7 L 146,206.9 L 148,206.1 L 150,205.2 L 152,204.3 L 154,203.3 L 156,202.2 L 158,201.1 L 160,199.9 L 162,198.7 L 164,197.4 L 166,196 L 168,194.6 L 170,193.1 L 172,191.6 L 174,190 L 176,188.3 L 178,186.6 L 180,184.8 L 182,183 L 184,181.1 L 186,179.1 L 188,177.1 L 188,74 Z"
+                fill="url(#glassSheen)" opacity="0.5"/>
+
+          <!-- 瓶内暖光 -->
+          <g clip-path="url(#bottleClip)">
+            <rect x="44" y="60" width="152" height="156" fill="url(#innerGlow)"/>
+          </g>
+
+          <!-- 瓶身内的小星光点（静谧发光颗粒） -->
+          <g clip-path="url(#bottleClip)" opacity="0.5">
+            <circle cx="82" cy="118" r="1" fill="#ffe9c9"/>
+            <circle cx="140" cy="96" r="0.8" fill="#e6f0ff"/>
+            <circle cx="158" cy="150" r="1.1" fill="#ffe9c9"/>
+            <circle cx="104" cy="168" r="0.7" fill="#e6f0ff"/>
+            <circle cx="172" cy="120" r="0.8" fill="#ffe9c9"/>
+          </g>
+
+          <!-- 星星物理层（裁剪进瓶内） -->
+          <g clip-path="url(#bottleClip)" id="bottleStars"></g>
+
+          <!-- 玻璃左侧高光条 -->
+          <path d="M 60,84 L 60,186" stroke="rgba(255,255,255,0.32)" stroke-width="3" stroke-linecap="round" fill="none"/>
+          <path d="M 60,84 L 60,186" stroke="rgba(255,255,255,0.55)" stroke-width="1.1" stroke-linecap="round" fill="none" opacity="0.6"/>
+          <!-- 玻璃左侧细高光 -->
+          <path d="M 68,92 L 68,170" stroke="rgba(255,255,255,0.10)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+          <!-- 玻璃右侧窄高光 -->
+          <path d="M 182,88 L 182,158" stroke="rgba(255,255,255,0.14)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+          <!-- 肩部小高光 -->
+          <path d="M 60,76 L 82,70" stroke="rgba(255,255,255,0.18)" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+
+          <!-- 瓶底反射 -->
+          <ellipse cx="120" cy="207" rx="40" ry="4" fill="rgba(255,235,200,0.12)"/>
+          <ellipse cx="120" cy="207" rx="24" ry="2.6" fill="rgba(255,255,255,0.10)"/>
+
+          <!-- 瓶口内高光弧 -->
+          <path d="M 104,22 Q 120,20 136,22" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+          <!-- 瓶身下方阴影 -->
+          <ellipse cx="120" cy="223" rx="66" ry="5" fill="rgba(0,0,0,0.25)"/>
+        </svg>
+      </div>
+    </div>
+    <div class="star-count">瓶中有 <span id="starCount">0</span> 颗星星</div>
+    <div class="sync-status" id="syncStatus" style="display:none;"></div>
+
+    <!-- 主界面下部：在一起天数 + 情侣快捷入口 -->
+    <div class="home-lower">
+      <div class="couple-badge" id="coupleBadge" style="display:none;">
+        <div class="day-heart"><span class="heart">❤</span>在一起第 <span class="day-num" id="togetherDays">0</span> 天</div>
+        <div class="next-anni" id="nextAnni"></div>
+      </div>
+      <div class="home-quick">
+        <div class="hq-item" id="hqSpace" style="--hq-c:#ff6b81;">
+          <span class="hq-icon">💑</span>
+          <span class="hq-label">情侣空间</span>
+          <span class="hq-sub" id="hqSpaceSub"></span>
+        </div>
+        <div class="hq-item" id="hqEnergy" style="--hq-c:#ffd93d;">
+          <span class="hq-icon">💝</span>
+          <span class="hq-label">关系能量</span>
+          <span class="hq-sub" id="hqEnergySub"></span>
+        </div>
+        <div class="hq-item" id="hqWish" style="--hq-c:#6bcb77;">
+          <span class="hq-icon">🎯</span>
+          <span class="hq-label">愿望清单</span>
+          <span class="hq-badge hidden-badge" id="hqWishBadge">0</span>
+          <span class="hq-sub" id="hqWishSub"></span>
+        </div>
+        <div class="hq-item" id="hqEvent" style="--hq-c:#6bc5ff;">
+          <span class="hq-icon">📖</span>
+          <span class="hq-label">共同回忆</span>
+          <span class="hq-badge hidden-badge" id="hqEventBadge">0</span>
+          <span class="hq-sub" id="hqEventSub"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hint" id="hint">轻触瓶身</div>
+    <button class="shake-btn" id="shakeBtn">摇一摇 ✨</button>
+  </div>
+
+  <!-- Menu Overlay -->
+  <div class="overlay menu-overlay" id="menuOverlay">
+    <div class="menu-card">
+      <button class="menu-btn write-btn" id="writeBtn">
+        <span class="menu-icon">✎</span>
+        <span>写信</span>
+      </button>
+      <button class="menu-btn view-btn" id="viewBtn">
+        <span class="menu-icon">✦</span>
+        <span>查看信件</span>
+      </button>
+      <button class="menu-btn more-btn" id="moreBtn">
+        <span class="menu-icon">☰</span>
+        <span>更多</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Write Modal -->
+  <div class="modal write-modal" id="writeModal">
+    <div class="write-fx" id="writeFx"><canvas id="writeFxCanvas"></canvas></div>
+    <div class="write-paper">
+      <div class="paper-header">
+        <div class="paper-datetime">
+          <div id="writeDate"></div>
+          <div id="writeTime"></div>
+        </div>
+        <button class="close-btn" id="closeWrite">&times;</button>
+      </div>
+      <div class="emotion-section">
+        <div class="section-label">今天的心情</div>
+        <div class="emotion-selector" id="emotionSelector"></div>
+      </div>
+      <div class="text-section">
+        <textarea id="letterText" placeholder="今天发生了什么……写下来，折成一颗星星。" maxlength="5000"></textarea>
+      </div>
+      <div class="emotion-section" style="margin-bottom:10px;">
+        <div class="section-label">标签（可选，用逗号或空格分隔）</div>
+        <input id="writeTags" class="tag-input" style="background:rgba(255,255,255,0.6);color:#3d2b1f;" placeholder="例如：工作, 家人, 学习">
+      </div>
+      <button class="fold-btn" id="foldBtn" disabled>折成星星 ✦</button>
+    </div>
+  </div>
+
+  <!-- View Modal -->
+  <div class="modal view-modal" id="viewModal">
+    <div class="view-container">
+      <div class="view-header">
+        <h2>瓶中信件</h2>
+        <button class="close-btn" id="closeView">&times;</button>
+      </div>
+      <div class="view-filters">
+        <div class="filter-row">
+          <div class="search-box">
+            <span>🔍</span>
+            <input id="searchInput" placeholder="搜索内容、标签…">
+          </div>
+          <button class="filter-chip pinned" id="filterPinned">📌 置顶</button>
+          <button class="filter-chip starred" id="filterStarred">★ 收藏</button>
+        </div>
+        <div class="filter-row" id="emoFilterRow"></div>
+      </div>
+      <div class="letters-list" id="lettersList"></div>
+    </div>
+  </div>
+
+  <!-- More (Manage) Modal -->
+  <div class="modal more-modal" id="moreModal">
+    <div class="more-container">
+      <div class="more-header">
+        <h2>管理瓶子</h2>
+        <button class="close-btn" id="closeMore">&times;</button>
+      </div>
+      <div class="more-body">
+        <div class="more-section">
+          <div class="more-section-title">数据</div>
+          <div class="more-grid">
+            <div class="more-item" id="exportJsonBtn"><span class="mi-icon">📦</span><span>导出 JSON</span></div>
+            <div class="more-item" id="exportTxtBtn"><span class="mi-icon">📄</span><span>导出 TXT</span></div>
+            <div class="more-item" id="importBtn"><span class="mi-icon">📥</span><span>导入数据</span></div>
+          </div>
+        </div>
+        <div class="more-section">
+          <div class="more-section-title">情侣空间</div>
+          <div class="more-grid">
+            <div class="more-item" id="cpSpaceBtn"><span class="mi-icon">💑</span><span>情侣空间</span></div>
+            <div class="more-item" id="cpEnergyBtn"><span class="mi-icon">💝</span><span>关系能量</span></div>
+            <div class="more-item" id="cpWishBtn"><span class="mi-icon">🎯</span><span>愿望清单</span></div>
+            <div class="more-item" id="cpEventBtn"><span class="mi-icon">📖</span><span>共同回忆</span></div>
+          </div>
+        </div>
+        <div class="more-section">
+          <div class="more-section-title">洞察</div>
+          <div class="more-grid">
+            <div class="more-item" id="statsBtn"><span class="mi-icon">📊</span><span>情绪统计</span></div>
+            <div class="more-item" id="calendarBtn"><span class="mi-icon">📅</span><span>日历视图</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import file input -->
+  <input type="file" id="importFile" class="hidden-file" accept=".json,.txt">
+
+  <!-- Stats Modal -->
+  <div class="modal stats-modal" id="statsModal">
+    <div class="stats-container">
+      <div class="more-header">
+        <h2>情绪统计</h2>
+        <button class="close-btn" id="closeStats">&times;</button>
+      </div>
+      <div class="stats-body" id="statsBody"></div>
+    </div>
+  </div>
+
+  <!-- Calendar Modal -->
+  <div class="modal cal-modal" id="calModal">
+    <div class="cal-container">
+      <div class="more-header">
+        <h2>日历视图</h2>
+        <button class="close-btn" id="closeCal">&times;</button>
+      </div>
+      <div class="cal-body" id="calBody"></div>
+    </div>
+  </div>
+
+  <!-- 情侣空间 Modal -->
+  <div class="modal cp-modal" id="cpSpaceModal">
+    <div class="cp-container">
+      <div class="cp-header">
+        <h2>💑 情侣空间</h2>
+        <button class="close-btn" id="closeCpSpace">&times;</button>
+      </div>
+      <div class="cp-body" id="cpSpaceBody"></div>
+    </div>
+  </div>
+
+  <!-- 关系能量 Modal -->
+  <div class="modal cp-modal" id="cpEnergyModal">
+    <div class="cp-container">
+      <div class="cp-header">
+        <h2>⚡ 关系能量</h2>
+        <button class="close-btn" id="closeCpEnergy">&times;</button>
+      </div>
+      <div class="cp-body" id="cpEnergyBody"></div>
+    </div>
+  </div>
+
+  <!-- 愿望清单 Modal -->
+  <div class="modal cp-modal" id="cpWishModal">
+    <div class="cp-container">
+      <div class="cp-header">
+        <h2>🎯 愿望清单</h2>
+        <button class="close-btn" id="closeCpWish">&times;</button>
+      </div>
+      <div class="cp-body" id="cpWishBody"></div>
+    </div>
+  </div>
+
+  <!-- 共同回忆 Modal -->
+  <div class="modal cp-modal" id="cpEventModal">
+    <div class="cp-container">
+      <div class="cp-header">
+        <h2>📖 共同回忆</h2>
+        <button class="close-btn" id="closeCpEvent">&times;</button>
+      </div>
+      <div class="cp-body" id="cpEventBody"></div>
+    </div>
+  </div>
+
+  <!-- Confirm Dialog -->
+  <div class="overlay confirm-modal" id="confirmModal">
+    <div class="confirm-box">
+      <div class="confirm-title" id="confirmTitle">确认</div>
+      <div class="confirm-text" id="confirmText"></div>
+      <div class="confirm-actions">
+        <button class="confirm-btn cancel" id="confirmCancel">取消</button>
+        <button class="confirm-btn" id="confirmOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Fold Animation Overlay -->
+  <div class="fold-overlay" id="foldOverlay">
+    <div class="fold-scene">
+      <div class="paper-fold" id="paperFold"></div>
+      <div class="star-fold" id="starFold"></div>
+    </div>
+  </div>
+
+  <!-- Supabase 云端同步 SDK（若 SUPABASE_URL 未配置则不影响使用） -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <script>
+    /* ===== Emotion Data ===== */
+    var EMOTIONS = [
+      { level: 1, label: '开心', color: '#F4D03F', dark: '#B7950B', light: '#F9E79F' },
+      { level: 2, label: '难过', color: '#5DADE2', dark: '#2874A6', light: '#AED6F1' },
+      { level: 3, label: '生气', color: '#E74C3C', dark: '#A93226', light: '#EC7063' },
+      { level: 4, label: '平静', color: '#58D68D', dark: '#1E8449', light: '#ABEBC6' },
+      { level: 5, label: '焦虑', color: '#AF7AC5', dark: '#7D3C98', light: '#D2B4DE' },
+      { level: 6, label: '疲惫', color: '#95A5A6', dark: '#5D6D7E', light: '#CCD1D1' },
+    ];
+    // 情绪色系 -> 星星面片色彩（与情绪绑定）
+    function emoToStarColors(emo) {
+      if (!emo) emo = EMOTIONS[0];
+      return { top: emo.light, light: emo.light, base: emo.color, dark: emo.dark, edge: emo.dark };
+    }
+
+    /* ===== Star SVG Generator ===== */
+    function createStarSVG(colors, size) {
+      size = size || 20;
+      if (!colors) colors = generateStarColors();
+      var faces = buildStarFaces(colors);
+      return '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" xmlns="http://www.w3.org/2000/svg" class="star-svg">'
+        + faces
+        + '</svg>';
+    }
+
+    /* ===== Data Storage ===== */
+    var STORAGE_KEY = 'star_bottle_letters_v2';
+    var letters = [];
+    try { letters = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { letters = []; }
+    // 兼容 v1 旧数据
+    if (letters.length === 0) {
+      try {
+        var old = JSON.parse(localStorage.getItem('star_bottle_letters_v1') || '[]');
+        if (old.length) letters = old;
+      } catch(e) {}
+    }
+
+    /* ===== 情侣数据存储 ===== */
+    var COUPLE_KEY = 'star_bottle_couple_v1';
+    var couple = { startDate: '', anniversaries: [], events: [], wishes: [] };
+    try {
+      var _c = JSON.parse(localStorage.getItem(COUPLE_KEY) || '{}');
+      if (_c && typeof _c === 'object') {
+        couple.startDate = _c.startDate || '';
+        couple.anniversaries = _c.anniversaries || [];
+        couple.events = _c.events || [];
+        couple.wishes = _c.wishes || [];
+      }
+    } catch(e) {}
+
+    /* ==========================================================
+       ☁️ 云端实时同步（Supabase）
+       ----------------------------------------------------------
+       如果你只想单人本地使用，把 SUPABASE_URL 留空即可，一切照旧。
+       想两人共享同一个瓶子并实时同步：
+         1) 在 supabase.com 免费注册并新建项目
+         2) 建一张表 couple_data（见下方 READY 建表说明）
+         3) 把下面的 SUPABASE_URL / SUPABASE_KEY 填成你的值
+         4) 两人都用同一个 PAIR_ID（默认已是 'pair-001'）
+       ========================================================== */
+    var SUPABASE_URL = 'https://srljnhslwrwzouvtzphf.supabase.co';  // 你的 Supabase 项目地址
+    var SUPABASE_KEY  = 'sb_publishable_eNTG5SOEeQQwzX4K9G18Hg_WNNkF_Wz';  // 你的 Supabase 公开密钥
+    var PAIR_ID = 'pair-001';       // 情侣配对标识：两个人填一样即可共享
+    var CLOUD_ON = false;
+    var _sbClient = null;
+    var _pushTimer = null;
+
+    function saveLetters() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(letters)); } catch(e) { console.error('保存失败'); }
+      cloudPushLetters();
+    }
+    function saveCouple() {
+      try { localStorage.setItem(COUPLE_KEY, JSON.stringify(couple)); } catch(e) { console.error('情侣数据保存失败'); }
+      cloudPushCouple();
+    }
+
+    /* ---- 云端读写逻辑（Supabase 三方合并同步）---- */
+    function sbSdkReady() {
+      return !!(window.supabase && typeof window.supabase.createClient === 'function');
+    }
+    // SDK 加载失败时（CDN 被墙等），自动尝试备用 CDN
+    function ensureSupabaseSdk(cb) {
+      if (sbSdkReady()) { cb(); return; }
+      var urls = [
+        'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+      ];
+      var i = 0;
+      (function tryNext() {
+        if (i >= urls.length) return;
+        var s = document.createElement('script');
+        s.src = urls[i++];
+        s.onload = function() { if (sbSdkReady()) cb(); else tryNext(); };
+        s.onerror = function() { s.remove(); tryNext(); };
+        document.head.appendChild(s);
+      })();
+    }
+    function cloudReady() {
+      if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+      if (!sbSdkReady()) return false;
+      try {
+        if (!_sbClient) {
+          _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          CLOUD_ON = true;
+        }
+      } catch(e) { CLOUD_ON = false; }
+      return CLOUD_ON && !!_sbClient;
+    }
+
+    /* ---- 三方合并：base(上次看到的云端状态) + 本地 + 云端 ---- */
+    var CLOUD_BASE_KEY = 'star_bottle_cloud_base_v1';
+    function loadCloudBase() {
+      try { return JSON.parse(localStorage.getItem(CLOUD_BASE_KEY) || 'null'); } catch(e) { return null; }
+    }
+    function saveCloudBase(b) {
+      try { localStorage.setItem(CLOUD_BASE_KEY, JSON.stringify(b)); } catch(e) {}
+    }
+    function _same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+    // 集合合并（按 id）：新增/删除/修改都能正确双向同步，双方各自的改动都保留
+    function mergeCollection(baseArr, localArr, remoteArr) {
+      function toMap(arr) {
+        var m = {};
+        (arr || []).forEach(function(x) { if (x && x.id !== undefined) m[x.id] = x; });
+        return m;
+      }
+      var b = toMap(baseArr), l = toMap(localArr), r = toMap(remoteArr);
+      var ids = {};
+      Object.keys(b).concat(Object.keys(l)).concat(Object.keys(r)).forEach(function(k) { ids[k] = 1; });
+      var out = [];
+      Object.keys(ids).forEach(function(id) {
+        var bv = b[id], lv = l[id], rv = r[id];
+        if (lv && rv) {
+          if (_same(lv, rv)) out.push(lv);
+          else if (bv && _same(bv, lv)) out.push(rv);            // 本地没动，云端更新了 → 取云端
+          else if (bv && _same(bv, rv)) out.push(lv);            // 云端没动，本地更新了 → 取本地
+          else out.push(((lv.timestamp || lv.id || 0) >= (rv.timestamp || rv.id || 0)) ? lv : rv); // 冲突 → 较新的赢
+        } else if (lv && !rv) {
+          if (bv && _same(bv, lv)) return;                        // 对方删了，本地没动 → 尊重删除
+          out.push(lv);                                           // 本地新增 / 本地改过
+        } else if (!lv && rv) {
+          if (bv && _same(bv, rv)) return;                        // 本地删了，云端没动 → 尊重删除
+          out.push(rv);                                           // 对方新增 / 对方改过
+        } // 只在 base 里 → 双方都删了 → 丢弃
+      });
+      return out;
+    }
+    function mergeScalar(bv, lv, rv) {
+      if (lv === rv) return lv;
+      if (bv === lv) return rv;
+      if (bv === rv) return lv;
+      return (lv !== undefined && lv !== '') ? lv : rv;
+    }
+    function computeMergedState(base, remote) {
+      var bc = (base && base.couple) || {};
+      var rc = (remote && remote.couple) || {};
+      var bl = (base && base.letters) || [];
+      var rl = (remote && remote.letters) || [];
+      return {
+        letters: mergeCollection(bl, letters, rl),
+        couple: {
+          startDate: mergeScalar(bc.startDate || '', couple.startDate, rc.startDate || ''),
+          anniversaries: mergeCollection(bc.anniversaries, couple.anniversaries, rc.anniversaries),
+          events: mergeCollection(bc.events, couple.events, rc.events),
+          wishes: mergeCollection(bc.wishes, couple.wishes, rc.wishes)
+        }
+      };
+    }
+    // 把合并结果应用到本地（无变化时跳过，避免无谓的重绘）
+    function applyStateLocally(state) {
+      var changed = false;
+      if (state.letters && !_same(state.letters, letters)) {
+        letters = state.letters;
+        changed = true;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(letters)); } catch(e) {}
+      }
+      if (state.couple) {
+        var c = state.couple;
+        var nc = {
+          startDate: (c.startDate !== undefined) ? c.startDate : couple.startDate,
+          anniversaries: Array.isArray(c.anniversaries) ? c.anniversaries : couple.anniversaries,
+          events: Array.isArray(c.events) ? c.events : couple.events,
+          wishes: Array.isArray(c.wishes) ? c.wishes : couple.wishes
+        };
+        if (!_same(nc, couple)) {
+          couple = nc;
+          changed = true;
+          try { localStorage.setItem(COUPLE_KEY, JSON.stringify(couple)); } catch(e) {}
+        }
+      }
+      if (changed) {
+        try {
+          rebuildStars(); renderHomeQuick(); renderCoupleBadge(); updateTopInfo();
+          // 正在打开的信件/情侣弹窗不重绘，避免打断输入
+          if (!document.querySelector('.view-modal.active, .cp-modal.active, .more-modal.active')) renderLettersList();
+        } catch(e) {}
+      }
+      return changed;
+    }
+    // 同步状态指示（显示在瓶中信件数下方）
+    function setSyncStatus(txt, bad) {
+      var el = document.getElementById('syncStatus');
+      if (!el) return;
+      if (!txt) { el.style.display = 'none'; return; }
+      el.style.display = 'block';
+      el.textContent = txt;
+      el.style.color = bad ? 'rgba(255,150,140,0.65)' : 'rgba(190,210,240,0.45)';
+    }
+    function _hm() {
+      var d = new Date();
+      function p(n) { return (n < 10 ? '0' : '') + n; }
+      return p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+    // 从云端读一整行（letters + couple 一起返回；出错返回 undefined）
+    async function cloudFetchRow() {
+      var res = await _sbClient.from('couple_data')
+        .select('letters,couple')
+        .eq('pair_id', PAIR_ID)
+        .maybeSingle();
+      if (res.error) { console.warn('云端读取失败', res.error.message); return undefined; }
+      return res.data || { letters: [], couple: {} };
+    }
+    // 三方合并后写入云端，并应用到本地
+    async function cloudPushRow() {
+      if (!cloudReady()) return;
+      setSyncStatus('☁ 同步中…');
+      try {
+        var remote = await cloudFetchRow();
+        if (remote === undefined) { setSyncStatus('☁ 同步失败', true); return; }
+        var merged = computeMergedState(loadCloudBase(), remote);
+        var up = await _sbClient.from('couple_data').upsert(
+          { pair_id: PAIR_ID, letters: merged.letters, couple: merged.couple, updated_at: new Date().toISOString() },
+          { onConflict: 'pair_id' }
+        );
+        if (up.error) { console.warn('云端写入失败', up.error.message); setSyncStatus('☁ 同步失败', true); return; }
+        saveCloudBase(merged);
+        applyStateLocally(merged);
+        setSyncStatus('☁ 已同步 · ' + _hm());
+      } catch(e) { setSyncStatus('☁ 同步失败', true); }
+    }
+    // 从云端拉整行并应用（轮询 / 实时回调用）
+    async function cloudPullRow() {
+      if (!cloudReady()) return;
+      try {
+        var remote = await cloudFetchRow();
+        if (remote === undefined) return;
+        var merged = computeMergedState(loadCloudBase(), remote);
+        saveCloudBase(merged);
+        if (applyStateLocally(merged)) setSyncStatus('☁ 收到对方的更新 · ' + _hm());
+      } catch(e) {}
+    }
+    // 推送当前 letters / couple（防抖合并，等 SDK 就绪）
+    function cloudPushLetters() { scheduleCloudPush(); }
+    function cloudPushCouple() { scheduleCloudPush(); }
+    function scheduleCloudPush() {
+      if (!SUPABASE_URL || !SUPABASE_KEY) return;
+      if (_pushTimer) clearTimeout(_pushTimer);
+      _pushTimer = setTimeout(function() {
+        ensureSupabaseSdk(function() { cloudPushRow(); });
+      }, 600);
+    }
+    // 启动云端同步：首次推送 + 实时订阅 + 轮询兜底
+    function startCloudSync() {
+      if (!SUPABASE_URL || !SUPABASE_KEY) { setSyncStatus(''); return; }
+      ensureSupabaseSdk(function() {
+        if (!cloudReady()) return;
+        setSyncStatus('☁ 同步中…');
+        cloudPushRow().then(function() {
+          // 订阅该行的实时变更（需在 Supabase 里为 couple_data 开启 Realtime）
+          try {
+            _sbClient.channel('star-bottle-' + PAIR_ID)
+              .on('postgres_changes',
+                  { event: '*', schema: 'public', table: 'couple_data', filter: 'pair_id=eq.' + PAIR_ID },
+                  function() { cloudPullRow(); })
+              .subscribe();
+          } catch(e) {}
+        });
+        // 轮询兜底：即使没开 Realtime，10 秒内也能收到对方的更新
+        setInterval(function() {
+          if (document.visibilityState === 'visible') cloudPullRow();
+        }, 10000);
+      });
+    }
+    // 计算在一起天数（当天也算一天）
+    function daysTogether() {
+      if (!couple.startDate) return 0;
+      var s = new Date(couple.startDate + 'T00:00:00');
+      if (isNaN(s.getTime())) return 0;
+      var now = new Date();
+      now.setHours(0,0,0,0);
+      var diff = Math.floor((now - s) / 86400000) + 1;
+      return diff > 0 ? diff : 0;
+    }
+    // 计算距离某日期还有几天（正数=未来倒计时，负数=已过）
+    function daysUntil(dateStr) {
+      if (!dateStr) return null;
+      var d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return null;
+      d.setFullYear(new Date().getFullYear());
+      // 若今年已过，则视为明年
+      var now = new Date(); now.setHours(0,0,0,0);
+      if (d < now) d.setFullYear(d.getFullYear() + 1);
+      return Math.round((d - now) / 86400000);
+    }
+    function padDay(n) { return n < 10 ? '0' + n : '' + n; }
+
+    /* ===== Date/Time ===== */
+    var weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+    function formatDate(d) {
+      return d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日 ' + weekdays[d.getDay()];
+    }
+    function formatTime(d) {
+      var h = String(d.getHours()).padStart(2,'0');
+      var m = String(d.getMinutes()).padStart(2,'0');
+      return h + ':' + m;
+    }
+    function formatDateShort(ts) {
+      var d = new Date(ts);
+      return (d.getMonth()+1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    function updateDateTime() {
+      var now = new Date();
+      document.getElementById('dateText').textContent = formatDate(now);
+      document.getElementById('timeText').textContent = formatTime(now);
+      document.getElementById('writeDate').textContent = formatDate(now);
+      document.getElementById('writeTime').textContent = formatTime(now);
+      updateTopInfo();
+    }
+
+    /* ===== 左上角信息：农历 / 节气节日 / 今日签 / 统计倒计时 ===== */
+    // 农历数据表（1900-2100）
+    var LUNAR_INFO = [
+      0x04bd8,0x04ae0,0x0a570,0x054d5,0x0d260,0x0d950,0x16554,0x056a0,0x09ad0,0x055d2,
+      0x04ae0,0x0a5b6,0x0a4d0,0x0d250,0x1d255,0x0b540,0x0d6a0,0x0ada2,0x095b0,0x14977,
+      0x04970,0x0a4b0,0x0b4b5,0x06a50,0x06d40,0x1ab54,0x02b60,0x09570,0x052f2,0x04970,
+      0x06566,0x0d4a0,0x0ea50,0x06e95,0x05ad0,0x02b60,0x186e3,0x092e0,0x1c8d7,0x0c950,
+      0x0d4a0,0x1d8a6,0x0b550,0x056a0,0x1a5b4,0x025d0,0x092d0,0x0d2b2,0x0a950,0x0b557,
+      0x06ca0,0x0b550,0x15355,0x04da0,0x0a5b0,0x14573,0x052b0,0x0a9a8,0x0e950,0x06aa0,
+      0x0aea6,0x0ab50,0x04b60,0x0aae4,0x0a570,0x05260,0x0f263,0x0d950,0x05b57,0x056a0,
+      0x096d0,0x04dd5,0x04ad0,0x0a4d0,0x0d4d4,0x0d250,0x0d558,0x0b540,0x0b6a0,0x195a6,
+      0x095b0,0x049b0,0x0a974,0x0a4b0,0x0b27a,0x06a50,0x06d40,0x0af46,0x0ab60,0x09570,
+      0x04af5,0x04970,0x064b0,0x074a3,0x0ea50,0x06b58,0x05ac0,0x0ab60,0x096d5,0x092e0,
+      0x0c960,0x0d954,0x0d4a0,0x0da50,0x07552,0x056a0,0x0abb7,0x025d0,0x092d0,0x0cab5,
+      0x0a950,0x0b4a0,0x0baa4,0x0ad50,0x055d9,0x04ba0,0x0a5b0,0x15176,0x052b0,0x0a930,
+      0x07954,0x06aa0,0x0ad50,0x05b52,0x04b60,0x0a6e6,0x0a4e0,0x0d260,0x0ea65,0x0d530,
+      0x05aa0,0x076a3,0x096d0,0x04afb,0x04ad0,0x0a4d0,0x1d0b6,0x0d250,0x0d520,0x0dd45,
+      0x0b5a0,0x056d0,0x055b2,0x049b0,0x0a577,0x0a4b0,0x0aa50,0x1b255,0x06d20,0x0ada0,
+      0x14b63,0x09370,0x049f8,0x04970,0x064b0,0x168a6,0x0ea50,0x06b20,0x1a6c4,0x0aae0,
+      0x0a2e0,0x0d2e3,0x0c960,0x0d557,0x0d4a0,0x0da50,0x05d55,0x056a0,0x0a6d0,0x055d4,
+      0x052d0,0x0a9b8,0x0a950,0x0b4a0,0x0b6a6,0x0ad50,0x055a0,0x0aba4,0x0a5b0,0x052b0,
+      0x0b273,0x06930,0x07337,0x06aa0,0x0ad50,0x14b55,0x04b60,0x0a570,0x054e4,0x0d160,
+      0x0e968,0x0d520,0x0daa0,0x16aa6,0x056d0,0x04ae0,0x0a9d4,0x0a2d0,0x0d150,0x0f252,
+      0x0d520
+    ];
+    var LUNAR_MONTH_NAMES = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];
+    var LUNAR_DAY_NAMES = ['初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+      '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+      '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+    function lunarYearDays(y) {
+      var i, sum = 348;
+      for (i = 0x8000; i > 0x8; i >>= 1) sum += (LUNAR_INFO[y - 1900] & i) ? 1 : 0;
+      return sum + lunarLeapDays(y);
+    }
+    function lunarLeapMonth(y) { return LUNAR_INFO[y - 1900] & 0xf; }
+    function lunarLeapDays(y) { return lunarLeapMonth(y) ? ((LUNAR_INFO[y - 1900] & 0x10000) ? 30 : 29) : 0; }
+    function lunarMonthDays(y, m) { return (LUNAR_INFO[y - 1900] & (0x10000 >> m)) ? 30 : 29; }
+    // 公历 -> 农历
+    function solarToLunar(y, m, d) {
+      var offset = Math.floor((Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000);
+      var i, temp = 0;
+      for (i = 1900; i < 2101 && offset > 0; i++) { temp = lunarYearDays(i); offset -= temp; }
+      if (offset < 0) { offset += temp; i--; }
+      var lunarY = i;
+      var leap = lunarLeapMonth(i);
+      var isLeap = false;
+      for (i = 1; i < 13 && offset > 0; i++) {
+        if (leap > 0 && i === (leap + 1) && !isLeap) { --i; isLeap = true; temp = lunarLeapDays(lunarY); }
+        else { temp = lunarMonthDays(lunarY, i); }
+        if (isLeap && i === (leap + 1)) isLeap = false;
+        offset -= temp;
+      }
+      if (offset === 0 && leap > 0 && i === leap + 1 && !isLeap) {
+        if (isLeap) { isLeap = false; } else { isLeap = true; --i; }
+      }
+      if (offset < 0) { offset += temp; --i; }
+      return { year: lunarY, month: i, day: offset + 1, isLeap: isLeap };
+    }
+    function lunarStr(lunar) {
+      return (lunar.isLeap ? '闰' : '') + LUNAR_MONTH_NAMES[lunar.month - 1] + '月' + LUNAR_DAY_NAMES[lunar.day - 1];
+    }
+
+    // 24节气（21世纪寿星公式，2001-2100）
+    var TERM_NAMES = ['小寒','大寒','立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至',
+      '小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪','大雪','冬至'];
+    var TERM_C21 = [5.4055,20.12,3.87,18.73,5.63,20.646,4.81,20.1,5.52,21.04,5.678,21.37,
+      7.108,22.83,7.5,23.13,7.646,23.042,8.318,23.088,7.928,22.76,7.648,21.94];
+    // 已核实的年份修正表（寿星公式临界日期±1天修正，key=年份，值=节气序号->偏移）
+    var TERM_FIX = { 2026: { 3: -1, 20: -1, 21: -1 } };
+    function todayTerm(y, m, d) {
+      var yy = y % 100;
+      for (var n = 0; n < 24; n++) {
+        var month = Math.floor(n / 2) + 1;
+        var day = Math.floor(yy * 0.2422 + TERM_C21[n]) - Math.floor(yy / 4);
+        if (TERM_FIX[y] && TERM_FIX[y][n]) day += TERM_FIX[y][n];
+        if (month === m && day === d) return TERM_NAMES[n];
+      }
+      return null;
+    }
+
+    // 节日表（公历 / 农历）
+    var SOLAR_FESTIVALS = {
+      '1/1':'元旦','2/14':'情人节','3/8':'妇女节','5/1':'劳动节','5/4':'青年节',
+      '5/20':'520','6/1':'儿童节','9/10':'教师节','10/1':'国庆节','12/24':'平安夜','12/25':'圣诞节'
+    };
+    var LUNAR_FESTIVALS = {
+      '1/1':'春节','1/15':'元宵节','5/5':'端午节','7/7':'七夕','8/15':'中秋节','9/9':'重阳节','12/8':'腊八节'
+    };
+
+    // 今日小签词库（按日期固定，每天换一签）
+    var SIGN_ITEMS = ['写信','折星星','早睡','喝热水','一个大大的拥抱','说出想念','大笑一场','散步',
+      '听喜欢的歌','吃点甜的','放下烦恼','夸夸TA','早点休息','给TA发条消息','许个愿','原谅一件小事',
+      '深呼吸','晒太阳','整理房间','好好吃饭','买束花','看场电影','牵手散步','认真说晚安','记录小确幸'];
+    function todaySign() {
+      var now = new Date();
+      var seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+      function rand() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+      var pool = SIGN_ITEMS.slice();
+      var picks = [];
+      for (var i = 0; i < 3 && pool.length; i++) {
+        picks.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+      }
+      return picks;
+    }
+
+    // 连续记录天数
+    function recordStreak() {
+      if (!letters.length) return 0;
+      var dayMap = {};
+      letters.forEach(function(l) {
+        var d = new Date(l.timestamp);
+        dayMap[d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate()] = true;
+      });
+      var cur = new Date(); cur.setHours(0,0,0,0);
+      if (!dayMap[cur.getFullYear() + '-' + cur.getMonth() + '-' + cur.getDate()]) {
+        cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() - 1);
+      }
+      var streak = 0;
+      while (dayMap[cur.getFullYear() + '-' + cur.getMonth() + '-' + cur.getDate()]) {
+        streak++;
+        cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() - 1);
+      }
+      return streak;
+    }
+
+    // 从今天起往后找农历月日对应的公历日
+    function findNextLunarDate(key) {
+      var now = new Date(); now.setHours(0,0,0,0);
+      for (var i = 0; i < 420; i++) {
+        var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+        var l = solarToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        if (!l.isLeap && (l.month + '/' + l.day) === key) return d;
+      }
+      return null;
+    }
+
+    // 假日/纪念日倒计时：优先返回30天内的情侣节日或纪念日
+    function nextHolidayInfo() {
+      var now = new Date(); now.setHours(0,0,0,0);
+      var y = now.getFullYear();
+      var candidates = [];
+      function pushSolar(name, month, day, lover) {
+        var d = new Date(y, month - 1, day);
+        var days = Math.round((d - now) / 86400000);
+        if (days < 0) { d = new Date(y + 1, month - 1, day); days = Math.round((d - now) / 86400000); }
+        candidates.push({ name: name, days: days, lover: !!lover });
+      }
+      pushSolar('元旦', 1, 1, false);
+      pushSolar('情人节', 2, 14, true);
+      pushSolar('五一', 5, 1, false);
+      pushSolar('520', 5, 20, true);
+      var qixi = findNextLunarDate('7/7');
+      if (qixi) candidates.push({ name: '七夕', days: Math.round((qixi - now) / 86400000), lover: true });
+      var zhongqiu = findNextLunarDate('8/15');
+      if (zhongqiu) candidates.push({ name: '中秋节', days: Math.round((zhongqiu - now) / 86400000), lover: false });
+      var chunjie = findNextLunarDate('1/1');
+      if (chunjie) candidates.push({ name: '春节', days: Math.round((chunjie - now) / 86400000), lover: false });
+      pushSolar('国庆节', 10, 1, false);
+      pushSolar('圣诞节', 12, 25, true);
+      // 周末
+      var toSat = (6 - now.getDay() + 7) % 7;
+      candidates.push({ name: '周末', days: toSat, lover: false });
+      // 用户纪念日
+      (couple.anniversaries || []).forEach(function(a) {
+        var du = daysUntil(a.date);
+        if (du !== null && du >= 0) candidates.push({ name: a.title, days: du, lover: true });
+      });
+      // 排序：天数近的在前，同天数情侣类优先
+      candidates.sort(function(a, b) {
+        if (a.days !== b.days) return a.days - b.days;
+        if (a.lover !== b.lover) return a.lover ? -1 : 1;
+        return 0;
+      });
+      // 30天内有情侣节日/纪念日则优先显示
+      var loverCand = null;
+      for (var i = 0; i < candidates.length; i++) {
+        if (candidates[i].lover) { loverCand = candidates[i]; break; }
+      }
+      if (loverCand && loverCand.days <= 30) return loverCand;
+      return candidates[0] || null;
+    }
+
+    // 左上角信息渲染（带缓存，避免每秒重算）
+    var _topInfoKey = '';
+    function updateTopInfo() {
+      var now = new Date();
+      var key = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate() + '|' +
+                letters.length + '|' + (couple.anniversaries || []).length;
+      if (key === _topInfoKey) return;
+      _topInfoKey = key;
+
+      var y = now.getFullYear(), m = now.getMonth() + 1, d = now.getDate();
+      var lunar = solarToLunar(y, m, d);
+      var term = todayTerm(y, m, d);
+      var festival = SOLAR_FESTIVALS[m + '/' + d] || LUNAR_FESTIVALS[lunar.month + '/' + lunar.day] || null;
+
+      // 第3行：农历 / 节气 / 节日（节日优先高亮）
+      var lunarEl = document.getElementById('lunarText');
+      var html = '';
+      if (festival) {
+        html = '<span class="lunar-fest">🎊 ' + festival + '</span>' + (term ? ' · ' + term : '') + ' · ' + lunarStr(lunar);
+      } else if (term) {
+        html = '🌿 ' + term + ' · ' + lunarStr(lunar);
+      } else {
+        html = '农历' + lunarStr(lunar);
+      }
+      lunarEl.innerHTML = html;
+
+      // 第4行：节日庆祝行（仅节日当天显示）
+      var festEl = document.getElementById('festivalText');
+      if (festival) {
+        festEl.style.display = 'block';
+        festEl.textContent = '今天是' + festival + '，记得抱抱身边的人呀 💕';
+      } else {
+        festEl.style.display = 'none';
+      }
+
+      // 第5行：今日小签
+      document.getElementById('signText').innerHTML =
+        '<span class="sign-lead">今日宜：</span>' + todaySign().join(' · ');
+
+      // 第6行：统计 + 倒计时
+      var streak = recordStreak();
+      var hol = nextHolidayInfo();
+      var parts = [];
+      var starPart = '✦ <b>' + letters.length + '</b> 颗星';
+      parts.push(starPart);
+      if (streak > 0) parts.push('连记 <b>' + streak + '</b> 天');
+      if (hol) {
+        if (hol.days === 0) parts.push(hol.name + '就是今天 🎉');
+        else parts.push('距' + hol.name + ' <b>' + hol.days + '</b> 天');
+      }
+      document.getElementById('statsText').innerHTML = parts.join('<span class="stats-sep">·</span>');
+    }
+
+    /* ===== Background Stars ===== */
+    function createBgStars() {
+      var container = document.getElementById('starsBg');
+      container.innerHTML = '';
+      var count = 260;   // 更密集、更璀璨的星空
+      for (var i = 0; i < count; i++) {
+        var star = document.createElement('div');
+        // 随机颜色：白 / 暖黄 / 淡蓝
+        var r = Math.random();
+        var type = r < 0.7 ? 's-white' : (r < 0.88 ? 's-warm' : 's-blue');
+        star.className = 'bg-star ' + type;
+        // 大部分星星集中在中上部（星空常见分布），避免太贴底
+        var top = Math.random() * 88;
+        if (top < 75) top = Math.random() * 75; // 中上部更密
+        star.style.left = (Math.random() * 100) + '%';
+        star.style.top = top + '%';
+        // 闪烁节奏：小星星更快，大星星更慢（更明显的"一闪一闪"）
+        star.style.setProperty('--delay', (Math.random() * 4) + 's');
+        star.style.setProperty('--dur', (1.6 + Math.random() * 4.0) + 's');
+        // 亮星作为视觉焦点，比例略提高
+        var isBig = Math.random() < 0.16;
+        if (isBig) {
+          star.classList.add('big');
+          var glow = ['rgba(255,255,255,0.95)', 'rgba(255,225,170,0.95)', 'rgba(180,215,255,0.95)'][Math.floor(Math.random()*3)];
+          star.style.setProperty('--glow', glow);
+          star.style.setProperty('--max-op', (0.95 + Math.random() * 0.05));
+          star.style.setProperty('--mid-op', (0.4 + Math.random() * 0.2));
+        } else {
+          // 普通星：最高亮度明显提高，与暗背景形成强烈闪烁
+          star.style.setProperty('--max-op', (0.75 + Math.random() * 0.25));
+          star.style.setProperty('--mid-op', (0.2 + Math.random() * 0.25));
+        }
+        var s = (isBig ? 2.6 : 1.0) + Math.random() * (isBig ? 1.6 : 1.9);
+        star.style.width = s + 'px';
+        star.style.height = s + 'px';
+        container.appendChild(star);
+      }
+    }
+
+    // 流星特效：周期性地从天空划过
+    function createShootingStars() {
+      var count = 3;  // 3 颗流星，间隔错开
+      for (var i = 0; i < count; i++) {
+        var el = document.createElement('div');
+        el.className = 'shooting-star';
+        // 起点分布在中上部偏右，向右下划
+        el.style.left = (60 + Math.random() * 30) + '%';
+        el.style.top = (4 + Math.random() * 22) + '%';
+        // 延迟错开，形成连续流星雨
+        var startDelay = 2 + i * (4 + Math.random() * 3);
+        el.style.animation = 'meteor ' + (2.4 + Math.random() * 1.5) + 's ease-in ' + startDelay + 's infinite';
+        document.body.appendChild(el);
+      }
+    }
+
+    /* ===== Random Color Helpers ===== */
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    function seededRandom(seed) {
+      var n = Number(seed);
+      if (!isFinite(n)) n = Math.abs((seed || '').toString().split('').reduce(function(a, c) { return (a + c.charCodeAt(0)) % 100000; }, 7));
+      var x = Math.sin(n) * 10000;
+      return x - Math.floor(x);
+    }
+    // 与情绪绑定的星星配色：基于情绪基准色的 HSL 微调生成五层面片色
+    function generateStarColors(seed, emo) {
+      // emo: 情绪对象。若无则全随机色相（兼容）
+      var h, s, l;
+      if (emo) {
+        // 从情绪主色提取色相/饱和度/亮度基准
+        var rgb = hexToRgb(emo.color);
+        var hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+        h = hsl.h;
+        s = hsl.s * 100;
+        l = hsl.l * 100;
+        // 微调
+        h += (seed !== undefined ? Math.floor(seededRandom(seed) * 24) - 12 : randomInt(-12, 12));
+        h = ((h % 360) + 360) % 360;
+        s = Math.max(40, Math.min(95, s + (seed !== undefined ? Math.floor(seededRandom(seed+1)*16)-8 : randomInt(-8,8))));
+        l = Math.max(38, Math.min(62, l + (seed !== undefined ? Math.floor(seededRandom(seed+2)*14)-7 : randomInt(-7,7))));
+      } else if (seed !== undefined) {
+        h = Math.floor(seededRandom(seed) * 360);
+        s = 72 + Math.floor(seededRandom(seed + 1) * 23);
+        l = 45 + Math.floor(seededRandom(seed + 2) * 15);
+      } else {
+        h = randomInt(0, 359);
+        s = randomInt(72, 95);
+        l = randomInt(45, 60);
+      }
+      function hslc(dl, ds) {
+        var ll = Math.max(6, Math.min(92, l + dl));
+        var ss = Math.max(20, Math.min(100, s + (ds || 0)));
+        return 'hsl(' + h + ',' + ss + '%,' + ll + '%)';
+      }
+      return {
+        top:   hslc(18, -6),
+        light: hslc(9,  -3),
+        base:  hslc(0),
+        dark:  hslc(-14, 2),
+        edge:  hslc(-26, 6)
+      };
+    }
+    function hexToRgb(hex) {
+      var r = 0, g = 0, b = 0;
+      hex = (hex || '').replace('#','');
+      if (hex.length === 6) {
+        r = parseInt(hex.substr(0,2),16);
+        g = parseInt(hex.substr(2,2),16);
+        b = parseInt(hex.substr(4,2),16);
+      }
+      return { r: r, g: g, b: b };
+    }
+    function rgbToHsl(r, g, b) {
+      r/=255; g/=255; b/=255;
+      var max = Math.max(r,g,b), min = Math.min(r,g,b);
+      var h, s, l = (max+min)/2;
+      if (max === min) { h = s = 0; }
+      else {
+        var d = max-min;
+        s = l > 0.5 ? d/(2-max-min) : d/(max+min);
+        switch(max) {
+          case r: h = (g-b)/d + (g<b ? 6 : 0); break;
+          case g: h = (b-r)/d + 2; break;
+          default: h = (r-g)/d + 4;
+        }
+        h *= 60;
+      }
+      return { h: h, s: s, l: l };
+    }
+
+    /* ===== 3D Origami Star Facets ===== */
+    function buildStarFaces(c) {
+      var tips   = ['50,8','89.9,37.1','74.7,83.9','25.3,83.9','10.1,37.1'];
+      var notchs = ['61.8,33.8','69.0,56.2','50,70','31.0,56.2','38.2,33.8'];
+      var inner  = ['50,30.5','65.96,42.14','59.88,60.86','40.12,60.86','34.04,42.14'];
+      var h = '';
+      h += '<path d="M 50,8 L 61.8,33.8 L 89.9,37.1 L 69.0,56.2 L 74.7,83.9 L 50,70 L 25.3,83.9 L 31.0,56.2 L 10.1,37.1 L 38.2,33.8 Z" '
+         + 'fill="' + c.base + '" stroke="' + c.edge + '" stroke-width="1.6" stroke-linejoin="round"/>';
+      for (var i = 0; i < 5; i++) {
+        var prev = (i + 4) % 5;
+        h += '<polygon points="' + inner[i] + ' ' + tips[i] + ' ' + notchs[prev] + '" fill="' + c.light + '"/>';
+        h += '<polygon points="' + tips[i] + ' ' + notchs[i] + ' ' + inner[i] + '" fill="' + c.dark + '"/>';
+      }
+      h += '<polygon points="' + inner.join(' ') + '" fill="' + c.top + '"/>';
+      h += '<polygon points="' + inner.join(' ') + '" fill="none" stroke="rgba(0,0,0,0.22)" stroke-width="1" stroke-linejoin="round"/>';
+      h += '<path d="M 50,30.5 L 50,8 M 65.96,42.14 L 89.9,37.1 M 59.88,60.86 L 74.7,83.9 M 40.12,60.86 L 25.3,83.9 M 34.04,42.14 L 10.1,37.1" '
+         + 'stroke="rgba(255,255,255,0.28)" stroke-width="1" fill="none"/>';
+      h += '<polygon points="50,39.5 56.38,44.16 53.95,51.64 46.05,51.64 43.62,44.16" fill="rgba(255,255,255,0.20)"/>';
+      return h;
+    }
+
+    /* ===== 2D Physics Engine for Bottle Stars ===== */
+    var activeStars = [];
+    var pendingStars = [];
+    var physRunning = false;
+    var physRaf = null;
+    var physLast = 0;
+    var releaseAccum = 0;
+
+    var BOTTLE = {
+      left: 52, right: 188,
+      mouthY: 58,
+      bottomY: function(x) {
+        var t = (x - 120) / 70;
+        return 212 - 37 * t * t;
+      }
+    };
+    var PHYS = { gravity: 620, restitution: 0.4, friction: 0.88, drag: 0.992 };
+
+    function starSizeForTotal(total) {
+      if (total <= 30) return { min: 17, max: 27 };
+      if (total <= 60) return { min: 14, max: 22 };
+      if (total <= 100) return { min: 11, max: 17 };
+      return { min: 9, max: 13 };
+    }
+
+    function makeStarData(idx, entering) {
+      var l = letters[idx];
+      var seedBase = (l && l.id) || (idx * 7919);
+      var sr = function(offset) { return seededRandom(seedBase + offset); };
+      var sz = starSizeForTotal(letters.length);
+      var baseSize = sz.min + sr(4) * (sz.max - sz.min);
+      // 星星颜色与情绪绑定：用该信件情绪生成专属配色（若已有 starColors 且含情绪色则保留）
+      var colors = null;
+      var emo = l ? emotionByLabel(l.emotionLabel) : null;
+      if (l && l.starColors) {
+        colors = l.starColors;
+      } else {
+        colors = generateStarColors(seedBase, emo);
+      }
+      return {
+        x: entering ? (108 + Math.random() * 24) : (108 + sr(1) * 24),
+        y: entering ? 12 : 12,
+        vx: entering ? (Math.random() - 0.5) * 60 : (sr(7) - 0.5) * 60,
+        vy: 0,
+        r: baseSize / 2,
+        rot: sr(3) * 360,
+        rotV: (sr(8) - 0.5) * 150,
+        scale: baseSize / 100,
+        colors: colors,
+        el: null
+      };
+    }
+
+    function buildStarDom(data, idx) {
+      var container = document.getElementById('bottleStars');
+      var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', 'phys-star');
+      var inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      inner.setAttribute('class', 'star-inner');
+      var d = Math.abs(Math.sin(idx * 2.7));
+      var dur = 3.2 + Math.abs(Math.cos(idx * 1.7)) * 2.5;
+      inner.setAttribute('style', 'animation-delay:' + (d * -4) + 's;animation-duration:' + dur + 's');
+      inner.innerHTML = '<path d="M 50,10 L 61.8,35.8 L 89.9,39.1 L 69.0,58.2 L 74.7,85.9 L 50,72 L 25.3,85.9 L 31.0,58.2 L 10.1,39.1 L 38.2,35.8 Z" '
+        + 'fill="rgba(0,0,0,0.22)" transform="translate(1.5,2.5)"/>'
+        + buildStarFaces(data.colors);
+      g.appendChild(inner);
+      container.appendChild(g);
+      data.el = g;
+    }
+
+    function applyBounds(s, dt, REST, FRIC, G) {
+      var r = s.r;
+      if (s.y < 66) {
+        var xl, xr;
+        if (s.y < 38) { xl = 98; xr = 142; }
+        else if (s.y < 64) { var k = (s.y - 38) / 26; xl = 98 - 48 * k; xr = 142 + 48 * k; }
+        else { xl = 50; xr = 190; }
+        if (s.x < xl + r) { s.x = xl + r; if (s.vx < 0) s.vx = -s.vx * REST; }
+        if (s.x > xr - r) { s.x = xr - r; if (s.vx > 0) s.vx = -s.vx * REST; }
+      }
+      if (s.x < BOTTLE.left + r) { s.x = BOTTLE.left + r; if (s.vx < 0) s.vx = -s.vx * REST; }
+      if (s.x > BOTTLE.right - r) { s.x = BOTTLE.right - r; if (s.vx > 0) s.vx = -s.vx * REST; }
+      var by = BOTTLE.bottomY(s.x);
+      if (s.y + r > by) {
+        s.y = by - r;
+        if (s.vy > 12) { s.vy = -s.vy * REST; s.rotV += (Math.random() - 0.5) * 60; }
+        else { s.vy = 0; s.vx *= 0.85; }
+        s.vx *= FRIC;
+        var slope = -74 * (s.x - 120) / 4900;
+        var tang = slope / Math.sqrt(1 + slope * slope);
+        s.vx += G * tang * dt * 0.2;
+      }
+      if (s.y - r < BOTTLE.mouthY) { s.y = BOTTLE.mouthY + r; if (s.vy < 0) s.vy = 0; }
+    }
+
+    function physicsStep(dt) {
+      releaseAccum += dt * 45;
+      var cnt = Math.floor(releaseAccum);
+      releaseAccum -= cnt;
+      while (cnt-- > 0 && pendingStars.length) {
+        var ps = pendingStars.shift();
+        activeStars.push(ps);
+        buildStarDom(ps, activeStars.length - 1);
+      }
+      var n = activeStars.length;
+      if (!n) return;
+      var G = PHYS.gravity, REST = PHYS.restitution, FRIC = PHYS.friction;
+      var dragF = Math.pow(PHYS.drag, dt * 60);
+      var i, j;
+      for (i = 0; i < n; i++) {
+        var s = activeStars[i];
+        s.vy += G * dt;
+        s.vx *= dragF; s.vy *= dragF;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.rot += s.rotV * dt;
+        s.rotV *= Math.pow(0.985, dt * 60);
+        applyBounds(s, dt, REST, FRIC, G);
+      }
+      for (var iter = 0; iter < 3; iter++) {
+        for (i = 0; i < n; i++) {
+          var a = activeStars[i];
+          for (j = i + 1; j < n; j++) {
+            var b = activeStars[j];
+            var dx = b.x - a.x, dy = b.y - a.y;
+            var minD = a.r + b.r;
+            var d2 = dx * dx + dy * dy;
+            if (d2 >= minD * minD || d2 < 0.0001) continue;
+            var d = Math.sqrt(d2);
+            var nx = dx / d, ny = dy / d;
+            var overlap = minD - d;
+            var wa = b.r / (a.r + b.r), wb = a.r / (a.r + b.r);
+            a.x -= nx * overlap * wa; a.y -= ny * overlap * wa;
+            b.x += nx * overlap * wb; b.y += ny * overlap * wb;
+            var na = a.vx * nx + a.vy * ny, nb = b.vx * nx + b.vy * ny;
+            var relV = na - nb;
+            if (relV > 0) {
+              if (relV < 20) {
+                a.vx -= na * nx; a.vy -= na * ny;
+                b.vx -= nb * nx; b.vy -= nb * ny;
+              } else {
+                var imp = (1 + REST) * relV * 0.5;
+                a.vx -= imp * nx; a.vy -= imp * ny;
+                b.vx += imp * nx; b.vy += imp * ny;
+                a.rotV += (Math.random() - 0.5) * 26;
+                b.rotV += (Math.random() - 0.5) * 26;
+              }
+            }
+          }
+        }
+        for (i = 0; i < n; i++) applyBounds(activeStars[i], dt, REST, FRIC, G);
+      }
+      for (i = 0; i < n; i++) {
+        var st = activeStars[i];
+        if (Math.abs(st.vx) < 8) st.vx = 0;
+        if (Math.abs(st.vy) < 12) st.vy = 0;
+        if (Math.abs(st.rotV) < 0.5) st.rotV = 0;
+      }
+    }
+
+    function renderPhysStars() {
+      var n = activeStars.length;
+      for (var i = 0; i < n; i++) {
+        var s = activeStars[i];
+        s.el.setAttribute('transform', 'translate(' + s.x + ',' + s.y + ') rotate(' + s.rot + ') scale(' + s.scale + ')');
+      }
+      var c = document.getElementById('starCount');
+      var total = letters.length;
+      if (c && +c.textContent !== total) c.textContent = total;
+    }
+
+    function startPhysics() {
+      if (physRunning) return;
+      physRunning = true;
+      physLast = performance.now();
+      function loop(now) {
+        var dt = Math.min(0.033, (now - physLast) / 1000);
+        physLast = now;
+        physicsStep(dt);
+        renderPhysStars();
+        if (physRunning) physRaf = requestAnimationFrame(loop);
+      }
+      physRaf = requestAnimationFrame(loop);
+    }
+
+    // 重建全部星星（删除/导入/编辑后调用）
+    function rebuildStars() {
+      document.getElementById('bottleStars').innerHTML = '';
+      activeStars = [];
+      pendingStars = [];
+      releaseAccum = 0;
+      for (var i = 0; i < letters.length; i++) {
+        pendingStars.push(makeStarData(i, false));
+      }
+      startPhysics();
+    }
+
+    function addNewStar(idx) {
+      var s = makeStarData(idx, true);
+      activeStars.push(s);
+      buildStarDom(s, activeStars.length - 1);
+    }
+
+    function shakeStars() {
+      activeStars.forEach(function(s) {
+        s.vx += (Math.random() - 0.5) * 720;
+        s.vy -= 180 + Math.random() * 420;
+        s.rotV += (Math.random() - 0.5) * 460;
+      });
+    }
+
+    /* ===== Emotion helpers ===== */
+    function emotionByLabel(label) {
+      if (!label) return null;
+      for (var i = 0; i < EMOTIONS.length; i++) {
+        if (EMOTIONS[i].label === label) return EMOTIONS[i];
+      }
+      return null;
+    }
+    function emotionByLevel(level) {
+      for (var i = 0; i < EMOTIONS.length; i++) {
+        if (EMOTIONS[i].level === Number(level)) return EMOTIONS[i];
+      }
+      return null;
+    }
+    function letterColors(l) {
+      if (l.starColors) return l.starColors;
+      return generateStarColors(l.id || Math.floor(Math.random()*1e9), emotionByLabel(l.emotionLabel));
+    }
+    // 编辑情绪时刷新星星配色
+    function refreshLetterColors(l) {
+      l.starColors = generateStarColors(l.id || Date.now(), emotionByLabel(l.emotionLabel));
+    }
+
+    /* ===== Emotion Selector ===== */
+    var selectedEmotion = null;
+    function renderEmotionSelector() {
+      var container = document.getElementById('emotionSelector');
+      container.innerHTML = '';
+      EMOTIONS.forEach(function(emo) {
+        var btn = document.createElement('div');
+        btn.className = 'emotion-btn';
+        btn.style.setProperty('--emo-color', emo.color);
+        btn.dataset.level = emo.level;
+        btn.innerHTML = createStarSVG(emoToStarColors(emo), 26) + '<span class="emo-label">' + emo.label + '</span>';
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.emotion-btn').forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+          selectedEmotion = emo;
+          applyEmotionFx(emo);
+          updateFoldBtn();
+        });
+        container.appendChild(btn);
+      });
+    }
+    function updateFoldBtn() {
+      var text = document.getElementById('letterText').value.trim();
+      var btn = document.getElementById('foldBtn');
+      btn.disabled = !selectedEmotion || !text;
+    }
+
+    /* ===== 写信环境特效引擎 ===== */
+    // 每种情绪对应一种应景的环境特效
+    // happy 开心: 暖阳 + 飘落花瓣 | sad 难过: 下雨 + 阴云
+    // angry 生气: 火星余烬上升 | calm 平静: 柔和光点漂浮
+    // anxious 焦虑: 杂乱细粒子 + 纸片颤动 | tired 疲惫: 尘埃缓缓下坠
+    var fxEmotion = null;          // 当前特效情绪类型
+    var fxRaf = null;              // 动画帧句柄
+    var fxParticles = [];          // 粒子数组
+    var fxCanvas = null, fxCtx = null;
+    var fxW = 0, fxH = 0;
+    var fxT = 0;                   // 时间累加
+
+    // 情绪 label -> 特效类型 key
+    function fxKeyFor(label) {
+      switch (label) {
+        case '开心': return 'happy';
+        case '难过': return 'sad';
+        case '生气': return 'angry';
+        case '平静': return 'calm';
+        case '焦虑': return 'anxious';
+        case '疲惫': return 'tired';
+        default: return null;
+      }
+    }
+
+    // 在写信弹窗上应用某个情绪的特效
+    function applyEmotionFx(emo) {
+      var modal = document.getElementById('writeModal');
+      var fxEl = document.getElementById('writeFx');
+      if (!emo) { stopFx(); return; }
+      var key = fxKeyFor(emo.label);
+      if (!key) { stopFx(); return; }
+      // 清掉旧的抖动 class
+      modal.classList.remove('em-anxious', 'em-angry');
+      if (key === 'anxious') modal.classList.add('em-anxious');
+      if (key === 'angry') modal.classList.add('em-angry');
+      // 切换背景氛围
+      fxEl.className = 'write-fx on-' + key;
+      // 启动对应粒子系统
+      startFx(key);
+    }
+
+    function startFx(key) {
+      stopFx(true);
+      fxEmotion = key;
+      var c = document.getElementById('writeFxCanvas');
+      fxCanvas = c;
+      fxCtx = c.getContext('2d');
+      resizeFx();
+      fxParticles = [];
+      fxT = 0;
+      // 预填充粒子
+      var count = fxCount(key);
+      for (var i = 0; i < count; i++) fxParticles.push(makeFxParticle(key, true));
+      fxRaf = requestAnimationFrame(fxLoop);
+    }
+
+    function stopFx(keepClean) {
+      if (fxRaf) { cancelAnimationFrame(fxRaf); fxRaf = null; }
+      fxEmotion = null;
+      fxParticles = [];
+      var modal = document.getElementById('writeModal');
+      if (modal) modal.classList.remove('em-anxious', 'em-angry');
+      if (!keepClean) {
+        var fxEl = document.getElementById('writeFx');
+        if (fxEl) fxEl.className = 'write-fx';
+      }
+    }
+
+    function resizeFx() {
+      if (!fxCanvas) return;
+      var rect = fxCanvas.parentNode.getBoundingClientRect();
+      var dpr = window.devicePixelRatio || 1;
+      fxW = rect.width; fxH = rect.height;
+      fxCanvas.width = fxW * dpr;
+      fxCanvas.height = fxH * dpr;
+      fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function fxCount(key) {
+      switch (key) {
+        case 'happy': return 55;
+        case 'sad': return 90;
+        case 'angry': return 45;
+        case 'calm': return 40;
+        case 'anxious': return 70;
+        case 'tired': return 50;
+        default: return 0;
+      }
+    }
+
+    function makeFxParticle(key, randomSeed) {
+      var p = { key: key, x: 0, y: 0, vx: 0, vy: 0, size: 0, rot: 0, vr: 0, life: 1, alpha: 1, color: '', type: 0 };
+      // 根据类型初始化
+      switch (key) {
+        case 'happy':
+          // 花瓣
+          p.type = Math.random() < 0.7 ? 0 : 1; // 0=花瓣 1=光点
+          p.size = 3 + Math.random() * 5;
+          p.x = Math.random() * fxW;
+          p.y = randomSeed ? Math.random() * fxH : -10;
+          p.vx = (Math.random() - 0.5) * 0.6;
+          p.vy = 0.6 + Math.random() * 1.2;
+          p.rot = Math.random() * Math.PI * 2;
+          p.vr = (Math.random() - 0.5) * 0.06;
+          p.alpha = 0.6 + Math.random() * 0.4;
+          var cols = ['#FFB6C1', '#FFD700', '#FFA07A', '#FFE4E1', '#FF8C69'];
+          p.color = cols[Math.floor(Math.random() * cols.length)];
+          break;
+        case 'sad':
+          // 雨滴
+          p.type = Math.random() < 0.85 ? 0 : 1; // 0=雨滴 1=雨丝
+          p.size = 1 + Math.random() * 1.5;
+          p.x = Math.random() * fxW;
+          p.y = randomSeed ? Math.random() * fxH : -20;
+          p.vy = 6 + Math.random() * 5;
+          p.vx = -0.5 - Math.random() * 0.8;
+          p.alpha = 0.35 + Math.random() * 0.4;
+          p.color = '#9FC5E8';
+          break;
+        case 'angry':
+          // 火星余烬
+          p.size = 1.5 + Math.random() * 3;
+          p.x = Math.random() * fxW;
+          p.y = randomSeed ? Math.random() * fxH : fxH + 10;
+          p.vy = -(0.5 + Math.random() * 1.2);
+          p.vx = (Math.random() - 0.5) * 0.5;
+          p.alpha = 0.7 + Math.random() * 0.3;
+          p.life = 0.6 + Math.random() * 0.4;
+          var fcols = ['#FF4500', '#FF6B35', '#FFD700', '#FF8C00'];
+          p.color = fcols[Math.floor(Math.random() * fcols.length)];
+          break;
+        case 'calm':
+          // 柔和光点
+          p.size = 2 + Math.random() * 4;
+          p.x = Math.random() * fxW;
+          p.y = randomSeed ? Math.random() * fxH : Math.random() * fxH;
+          p.vx = (Math.random() - 0.5) * 0.25;
+          p.vy = -(0.2 + Math.random() * 0.5);
+          p.alpha = 0.3 + Math.random() * 0.5;
+          var ccols = ['#A8E6CF', '#C8E6FF', '#9FE8E0', '#B8E0F5'];
+          p.color = ccols[Math.floor(Math.random() * ccols.length)];
+          break;
+        case 'anxious':
+          // 杂乱细粒子
+          p.size = 1 + Math.random() * 2.5;
+          p.x = Math.random() * fxW;
+          p.y = randomSeed ? Math.random() * fxH : Math.random() * fxH;
+          p.vx = (Math.random() - 0.5) * 2.2;
+          p.vy = (Math.random() - 0.5) * 2.2;
+          p.alpha = 0.4 + Math.random() * 0.5;
+          p.life = 0.4 + Math.random() * 0.6;
+          var acols = ['#C9A2E8', '#B77CE8', '#D0A8F0', '#A78BDB'];
+          p.color = acols[Math.floor(Math.random() * acols.length)];
+          break;
+        case 'tired':
+          // 尘埃缓缓下坠
+          p.size = 1 + Math.random() * 2;
+          p.x = Math.random() * fxW;
+          p.y = randomSeed ? Math.random() * fxH : -8;
+          p.vy = 0.25 + Math.random() * 0.5;
+          p.vx = (Math.random() - 0.5) * 0.2;
+          p.alpha = 0.2 + Math.random() * 0.3;
+          var tcols = ['#A9A9A9', '#B8B8C0', '#909090', '#C0C0C8'];
+          p.color = tcols[Math.floor(Math.random() * tcols.length)];
+          break;
+      }
+      return p;
+    }
+
+    function updateFxParticle(p) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.vr) { p.rot += p.vr; }
+      if (p.key === 'anxious') {
+        // 随机扰动
+        p.vx += (Math.random() - 0.5) * 0.6;
+        p.vy += (Math.random() - 0.5) * 0.6;
+        p.vx *= 0.96; p.vy *= 0.96;
+        if (p.vx > 2.5) p.vx = 2.5; if (p.vx < -2.5) p.vx = -2.5;
+        if (p.vy > 2.5) p.vy = 2.5; if (p.vy < -2.5) p.vy = -2.5;
+      }
+      if (p.key === 'angry') {
+        p.vx += (Math.random() - 0.5) * 0.15;
+        p.life -= 0.003;
+        p.alpha = Math.max(0, p.life * 0.9);
+      }
+      // 生命周期/边界回收
+      var dead = false;
+      switch (p.key) {
+        case 'happy': case 'sad': case 'tired':
+          dead = p.y > fxH + 20;
+          break;
+        case 'angry':
+          dead = p.y < -20 || p.life <= 0;
+          break;
+        case 'calm':
+          if (p.y < -20) { p.y = fxH + 20; p.x = Math.random() * fxW; }
+          if (p.x < -20) p.x = fxW + 20; if (p.x > fxW + 20) p.x = -20;
+          break;
+        case 'anxious':
+          dead = (p.x < -20 || p.x > fxW + 20 || p.y < -20 || p.y > fxH + 20) && Math.random() < 0.1;
+          break;
+      }
+      if (dead) {
+        var np = makeFxParticle(p.key, false);
+        p.x = np.x; p.y = np.y; p.vx = np.vx; p.vy = np.vy; p.size = np.size;
+        p.rot = np.rot; p.vr = np.vr; p.alpha = np.alpha; p.color = np.color;
+        p.life = np.life || 1; p.type = np.type || 0;
+      }
+    }
+
+    function drawFx() {
+      if (!fxCtx) return;
+      fxCtx.clearRect(0, 0, fxW, fxH);
+      for (var i = 0; i < fxParticles.length; i++) {
+        var p = fxParticles[i];
+        fxCtx.save();
+        fxCtx.globalAlpha = p.alpha;
+        fxCtx.fillStyle = p.color;
+        switch (p.key) {
+          case 'happy':
+            if (p.type === 0) {
+              // 花瓣（椭圆）
+              fxCtx.translate(p.x, p.y); fxCtx.rotate(p.rot);
+              fxCtx.beginPath();
+              fxCtx.ellipse(0, 0, p.size * 0.7, p.size * 0.35, 0, 0, Math.PI * 2);
+              fxCtx.fill();
+            } else {
+              fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size * 0.4, 0, Math.PI * 2); fxCtx.fill();
+            }
+            break;
+          case 'sad':
+            if (p.type === 0) {
+              fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); fxCtx.fill();
+            } else {
+              // 雨丝
+              fxCtx.strokeStyle = p.color; fxCtx.lineWidth = p.size * 0.7;
+              fxCtx.beginPath(); fxCtx.moveTo(p.x, p.y); fxCtx.lineTo(p.x + p.vx * 4, p.y + p.vy * 4); fxCtx.stroke();
+            }
+            break;
+          case 'angry':
+            // 发光火星
+            fxCtx.shadowColor = p.color; fxCtx.shadowBlur = 8;
+            fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); fxCtx.fill();
+            break;
+          case 'calm':
+            // 光晕光点
+            var g = fxCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.5);
+            g.addColorStop(0, p.color); g.addColorStop(1, 'rgba(255,255,255,0)');
+            fxCtx.fillStyle = g;
+            fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2); fxCtx.fill();
+            break;
+          case 'anxious':
+            fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); fxCtx.fill();
+            break;
+          case 'tired':
+            fxCtx.beginPath(); fxCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); fxCtx.fill();
+            break;
+        }
+        fxCtx.restore();
+      }
+    }
+
+    function fxLoop() {
+      if (!fxEmotion) return;
+      fxT++;
+      var i;
+      for (i = 0; i < fxParticles.length; i++) updateFxParticle(fxParticles[i]);
+      drawFx();
+      // 补充粒子数（稳定数量）
+      while (fxParticles.length < fxCount(fxEmotion)) fxParticles.push(makeFxParticle(fxEmotion, false));
+      fxRaf = requestAnimationFrame(fxLoop);
+    }
+
+    window.addEventListener('resize', function() {
+      if (fxEmotion) resizeFx();
+    });
+
+    /* ===== Modal Control ===== */
+    function openMenu() { document.getElementById('menuOverlay').classList.add('active'); }
+    function closeMenu() { document.getElementById('menuOverlay').classList.remove('active'); }
+    function openWriteModal() {
+      closeMenu();
+      stopFx();
+      selectedEmotion = null;
+      document.getElementById('letterText').value = '';
+      document.getElementById('writeTags').value = '';
+      document.querySelectorAll('.emotion-btn').forEach(function(b) { b.classList.remove('selected'); });
+      updateFoldBtn();
+      var now = new Date();
+      document.getElementById('writeDate').textContent = formatDate(now);
+      document.getElementById('writeTime').textContent = formatTime(now);
+      document.getElementById('writeModal').classList.add('active');
+      setTimeout(function() { document.getElementById('letterText').focus(); }, 400);
+    }
+    function closeWriteModal() { stopFx(); document.getElementById('writeModal').classList.remove('active'); }
+    function openViewModal() {
+      closeMenu();
+      currentEmoFilter = 'all';
+      currentPinnedFilter = false;
+      currentStarredFilter = false;
+      document.getElementById('searchInput').value = '';
+      renderEmoFilterChips();
+      renderLettersList();
+      document.getElementById('viewModal').classList.add('active');
+    }
+    function closeViewModal() { document.getElementById('viewModal').classList.remove('active'); }
+    function openMoreModal() { closeMenu(); document.getElementById('moreModal').classList.add('active'); }
+    function closeMoreModal() { document.getElementById('moreModal').classList.remove('active'); }
+
+    /* ===== Toast ===== */
+    var toastTimer = null;
+    function showToast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function() { t.classList.remove('show'); }, 2200);
+    }
+
+    /* ===== Confirm Dialog ===== */
+    var confirmCallback = null;
+    function openConfirm(title, text, okLabel, danger) {
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmText').textContent = text;
+      var ok = document.getElementById('confirmOk');
+      ok.textContent = okLabel || '确定';
+      ok.className = 'confirm-btn ' + (danger ? 'danger' : 'ok');
+      document.getElementById('confirmModal').classList.add('active');
+    }
+    function closeConfirm() {
+      document.getElementById('confirmModal').classList.remove('active');
+      confirmCallback = null;
+    }
+
+    /* ===== Letters List ===== */
+    var currentEmoFilter = 'all';
+    var currentPinnedFilter = false;
+    var currentStarredFilter = false;
+
+    function renderEmoFilterChips() {
+      var row = document.getElementById('emoFilterRow');
+      row.innerHTML = '';
+      var chip = document.createElement('button');
+      chip.className = 'filter-chip all' + (currentEmoFilter === 'all' ? ' active' : '');
+      chip.textContent = '全部';
+      chip.addEventListener('click', function(){ currentEmoFilter='all'; renderEmoFilterChips(); renderLettersList(); });
+      row.appendChild(chip);
+      EMOTIONS.forEach(function(emo) {
+        var c = document.createElement('button');
+        c.className = 'filter-chip' + (currentEmoFilter === emo.label ? ' active' : '');
+        c.style.setProperty('--chip-c', emo.color);
+        c.textContent = emo.label;
+        c.addEventListener('click', function(){
+          currentEmoFilter = (currentEmoFilter === emo.label) ? 'all' : emo.label;
+          renderEmoFilterChips(); renderLettersList();
+        });
+        row.appendChild(c);
+      });
+    }
+
+    function getFilteredLetters() {
+      var kw = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      var result = letters.filter(function(l) {
+        // 情绪筛选
+        if (currentEmoFilter !== 'all' && l.emotionLabel !== currentEmoFilter) return false;
+        // 置顶筛选
+        if (currentPinnedFilter && !l.pinned) return false;
+        // 收藏筛选
+        if (currentStarredFilter && !l.starred) return false;
+        // 关键词
+        if (kw) {
+          var contentHit = (l.content || '').toLowerCase().indexOf(kw) >= 0;
+          var tagsHit = (l.tags || []).some(function(t){ return t.toLowerCase().indexOf(kw) >= 0; });
+          if (!contentHit && !tagsHit) return false;
+        }
+        return true;
+      });
+      // 置顶优先，然后时间倒序
+      result = result.slice().sort(function(a,b){
+        if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+        return b.timestamp - a.timestamp;
+      });
+      return result;
+    }
+
+    function renderLettersList() {
+      var container = document.getElementById('lettersList');
+      container.innerHTML = '';
+      var list = getFilteredLetters();
+      if (list.length === 0) {
+        var isEmpty = letters.length === 0;
+        container.innerHTML = isEmpty
+          ? '<div class="empty-state"><div class="empty-icon">☆</div><p>瓶子里还没有星星</p><p>去写第一封信吧 ✦</p></div>'
+          : '<div class="empty-state"><div class="empty-icon">🔍</div><p>没有符合筛选条件的信件</p></div>';
+        return;
+      }
+      list.forEach(function(letter, idx) {
+        var emo = emotionByLabel(letter.emotionLabel) || emotionByLevel(letter.emotionLevel);
+        var emoColor = (letter.starColors && letter.starColors.base) || (emo ? emo.color : '#F4D03F');
+        var card = document.createElement('div');
+        card.className = 'letter-card' + (letter.pinned ? ' pinned-card' : '');
+        card.style.setProperty('--emo-color', emoColor);
+        card.style.animationDelay = (idx * 0.03) + 's';
+        card.dataset.id = letter.id;
+
+        var hasResolution = letter.resolution && letter.resolution.trim();
+        var resolutionHTML = '';
+        if (hasResolution) {
+          resolutionHTML =
+            '<div class="card-resolution">' +
+              '<div class="resolution-label">情绪是怎么消解的</div>' +
+              '<div class="resolution-text">' + escapeHTML(letter.resolution) + '</div>' +
+              '<div class="resolution-actions">' +
+                '<button class="res-btn res-btn-edit" onclick="editResolution(' + letter.id + ', this)">编辑</button>' +
+              '</div>' +
+            '</div>';
+        } else {
+          resolutionHTML =
+            '<div class="card-resolution">' +
+              '<div class="resolution-label">情绪是怎么消解的</div>' +
+              '<textarea class="resolution-input" placeholder="写下这个情绪后来是怎么消失的..." rows="2"></textarea>' +
+              '<div class="resolution-actions">' +
+                '<button class="res-btn res-btn-save" onclick="saveResolution(' + letter.id + ', this)">保存</button>' +
+                '<button class="res-btn res-btn-cancel" onclick="cancelResolution(this)">取消</button>' +
+              '</div>' +
+            '</div>';
+        }
+
+        var tagsHTML = '';
+        if (letter.tags && letter.tags.length) {
+          var tagList = letter.tags.map(function(t) {
+            return '<span class="card-tag">' + escapeHTML(t) + '<button onclick="removeTag(event,' + letter.id + ')">×</button></span>';
+          }).join('');
+          tagsHTML = '<div class="card-tags">' + tagList + '</div>';
+        }
+
+        var starHtml = createStarSVG(letterColors(letter), 18);
+
+        var actionsHTML =
+          '<div class="card-actions">' +
+            '<button class="card-act-btn" onclick="startEdit(' + letter.id + ')">✎ 编辑</button>' +
+            '<button class="card-act-btn ' + (letter.starred ? 'on' : '') + '" onclick="toggleStarred(' + letter.id + ')">' + (letter.starred ? '★ 已收藏' : '☆ 收藏') + '</button>' +
+            '<button class="card-act-btn ' + (letter.pinned ? 'on' : '') + '" onclick="togglePinned(' + letter.id + ')">' + (letter.pinned ? '📌 已置顶' : '📌 置顶') + '</button>' +
+            '<button class="card-act-btn" onclick="addTagPrompt(' + letter.id + ')"># 标签</button>' +
+            '<button class="card-act-btn" onclick="shareLetter(' + letter.id + ')">↗ 分享</button>' +
+            '<button class="card-act-btn danger" onclick="askDelete(' + letter.id + ')">🗑 删除</button>' +
+          '</div>';
+
+        card.innerHTML =
+          '<div class="card-top">' +
+            '<div class="card-date-row">' +
+              '<div class="card-star">' + starHtml + '</div>' +
+              '<span class="card-date">' + formatDateShort(letter.timestamp) + '</span>' +
+            '</div>' +
+            '<span class="card-emotion">' + escapeHTML(letter.emotionLabel || (emo ? emo.label : '')) + '</span>' +
+          '</div>' +
+          tagsHTML +
+          '<div class="card-content">' + escapeHTML(letter.content) + '</div>' +
+          resolutionHTML +
+          actionsHTML;
+        container.appendChild(card);
+      });
+    }
+
+    /* ===== Edit letter ===== */
+    function startEdit(letterId) {
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      var card = document.querySelector('.letter-card[data-id="' + letterId + '"]');
+      if (!card) return;
+      var emo = emotionByLabel(letter.emotionLabel) || emotionByLevel(letter.emotionLevel) || EMOTIONS[0];
+      var emoSelector = EMOTIONS.map(function(e) {
+        var sel = (e.level === emo.level) ? ' selected' : '';
+        return '<div class="card-edit-emo' + sel + '" data-level="' + e.level + '" style="--emo-color:' + e.color + '" onclick="pickEditEmo(event,' + letterId + ')">'
+          + createStarSVG(emoToStarColors(e), 20) + '<span class="emo-label">' + e.label + '</span></div>';
+      }).join('');
+
+      var contentHTML = escapeHTML(letter.content);
+      // 防止编辑模式下 textarea 里显示转义
+      var ta = document.createElement('textarea');
+      ta.value = letter.content;
+
+      card.innerHTML =
+        '<div class="card-edit-title">编辑信件（情绪与内容）</div>' +
+        '<div class="card-edit-emotions">' + emoSelector + '</div>' +
+        '<div class="card-edit-title">内容</div>' +
+        '<textarea class="card-edit-content" data-edit-content="1">' + escapeHTML(letter.content) + '</textarea>' +
+        '<div class="card-edit-actions">' +
+          '<button class="card-act-btn card-edit-save" onclick="saveEdit(' + letterId + ')">保存修改</button>' +
+          '<button class="card-act-btn" onclick="renderLettersList()">取消</button>' +
+        '</div>';
+    }
+    function pickEditEmo(event, letterId) {
+      var emos = document.querySelectorAll('.letter-card[data-id="' + letterId + '"] .card-edit-emo');
+      emos.forEach(function(e){ e.classList.remove('selected'); });
+      event.currentTarget.classList.add('selected');
+    }
+    function saveEdit(letterId) {
+      var card = document.querySelector('.letter-card[data-id="' + letterId + '"]');
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter || !card) return;
+      var ta = card.querySelector('[data-edit-content]');
+      var newContent = ta.value.trim();
+      var selEmo = card.querySelector('.card-edit-emo.selected');
+      var newLevel = selEmo ? Number(selEmo.dataset.level) : letter.emotionLevel;
+      var newEmo = emotionByLevel(newLevel);
+      if (!newContent) { showToast('内容不能为空'); return; }
+      letter.content = newContent;
+      letter.emotionLevel = newEmo.level;
+      letter.emotionLabel = newEmo.label;
+      refreshLetterColors(letter);  // 情绪变了，星星颜色跟着变
+      saveLetters();
+      rebuildStars();
+      renderLettersList();
+      showToast('已保存修改，星星颜色已更新 ✦');
+    }
+
+    /* ===== Delete ===== */
+    function askDelete(letterId) {
+      openConfirm('删除这封信？', '删除后，瓶子里的这颗星星也会一起消失。此操作不可恢复。', '删除', true);
+      confirmCallback = function() { doDelete(letterId); };
+    }
+    function doDelete(letterId) {
+      letters = letters.filter(function(l) { return l.id !== letterId; });
+      saveLetters();
+      rebuildStars();
+      renderLettersList();
+      closeConfirm();
+      showToast('已删除这封信 ✦');
+    }
+
+    /* ===== Starred / Pinned ===== */
+    function toggleStarred(letterId) {
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      letter.starred = !letter.starred;
+      saveLetters();
+      renderLettersList();
+      showToast(letter.starred ? '已加入收藏 ★' : '已取消收藏');
+    }
+    function togglePinned(letterId) {
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      letter.pinned = !letter.pinned;
+      saveLetters();
+      renderLettersList();
+      showToast(letter.pinned ? '已置顶 📌' : '已取消置顶');
+    }
+
+    /* ===== Tags ===== */
+    function parseTags(str) {
+      return str.split(/[,，\s]+/).map(function(t){ return t.trim(); }).filter(function(t){ return t; });
+    }
+    function addTagPrompt(letterId) {
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      var card = document.querySelector('.letter-card[data-id="' + letterId + '"]');
+      var existing = document.querySelector('.tag-input-row');
+      if (existing) { existing.remove(); return; }
+      var row = document.createElement('div');
+      row.className = 'tag-input-row';
+      row.innerHTML =
+        '<input class="tag-input" placeholder="输入标签，回车添加">' +
+        '<button class="tag-add-btn">添加</button>';
+      var input = row.querySelector('input');
+      input.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); doAddTag(letterId, input.value, row); } });
+      row.querySelector('.tag-add-btn').addEventListener('click', function(){ doAddTag(letterId, input.value, row); });
+      card.querySelector('.card-actions').before(row);
+      input.focus();
+    }
+    function doAddTag(letterId, val, row) {
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      if (!letter.tags) letter.tags = [];
+      var tags = parseTags(val);
+      tags.forEach(function(t) {
+        if (letter.tags.indexOf(t) === -1) letter.tags.push(t);
+      });
+      saveLetters();
+      if (row) row.remove();
+      renderLettersList();
+      showToast('标签已添加');
+    }
+    function removeTag(event, letterId) {
+      event.stopPropagation();
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter || !letter.tags) return;
+      var tagEl = event.currentTarget.closest('.card-tag');
+      var text = tagEl.childNodes[0].textContent;
+      letter.tags = letter.tags.filter(function(t) { return t !== text; });
+      saveLetters();
+      renderLettersList();
+    }
+
+    /* ===== Share ===== */
+    function shareLetter(letterId) {
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      var emo = emotionByLabel(letter.emotionLabel) || emotionByLevel(letter.emotionLevel);
+      var shareText = '✦ 我的星星信件 ✦\n' +
+        '时间：' + formatDateShort(letter.timestamp) + '\n' +
+        '心情：' + (letter.emotionLabel || (emo ? emo.label : '')) + '\n' +
+        '——————————\n' + letter.content +
+        (letter.resolution ? '\n\n「情绪后来如何消解」\n' + letter.resolution : '') +
+        '\n——————————\n来自「星星瓶子」';
+      if (navigator.share) {
+        navigator.share({ title: '星星信件', text: shareText }).catch(function(){ copyShareText(shareText); });
+      } else {
+        copyShareText(shareText);
+      }
+    }
+    function copyShareText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function(){ showToast('已复制分享内容到剪贴板'); })
+          .catch(function(){ fallbackCopy(text); });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+    function fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('已复制分享内容到剪贴板'); } catch(e) { showToast('复制失败'); }
+      document.body.removeChild(ta);
+    }
+
+    /* ===== Resolution ===== */
+    function saveResolution(letterId, btn) {
+      var card = btn.closest('.letter-card');
+      var textarea = card.querySelector('.resolution-input');
+      var text = textarea.value.trim();
+      if (!text) return;
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (letter) {
+        letter.resolution = text;
+        saveLetters();
+        renderLettersList();
+      }
+    }
+    function cancelResolution(btn) {
+      var card = btn.closest('.letter-card');
+      var textarea = card.querySelector('.resolution-input');
+      textarea.value = '';
+    }
+    function editResolution(letterId, btn) {
+      var card = btn.closest('.letter-card');
+      var letter = letters.find(function(l) { return l.id === letterId; });
+      if (!letter) return;
+      var resDiv = card.querySelector('.card-resolution');
+      resDiv.innerHTML =
+        '<div class="resolution-label">情绪是怎么消解的</div>' +
+        '<textarea class="resolution-input" rows="2">' + escapeHTML(letter.resolution || '') + '</textarea>' +
+        '<div class="resolution-actions">' +
+          '<button class="res-btn res-btn-save" onclick="saveResolution(' + letter.id + ', this)">保存</button>' +
+          '<button class="res-btn res-btn-cancel" onclick="renderLettersList()">取消</button>' +
+        '</div>';
+    }
+    function escapeHTML(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /* ===== Export / Import ===== */
+    function download(filename, content, mime) {
+      var blob = new Blob([content], { type: mime || 'application/octet-stream' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    }
+    function exportJSON() {
+      var data = JSON.stringify({ letters: letters, couple: couple }, null, 2);
+      var d = new Date();
+      download('星星瓶子_备份_' + d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()) + '.json', data, 'application/json');
+      showToast('已导出 JSON 备份');
+    }
+    function exportTxt() {
+      var lines = [];
+      if (couple.startDate) {
+        lines.push('❤ 在一起：' + couple.startDate + '（第 ' + daysTogether() + ' 天）');
+        if (couple.anniversaries.length) {
+          lines.push('🎂 纪念日：' + couple.anniversaries.map(function(a){ return a.title + '(' + a.date + ')'; }).join('、'));
+        }
+        if (couple.events.length) {
+          lines.push('📖 共同回忆：' + couple.events.length + ' 条');
+        }
+        if (couple.wishes.length) {
+          lines.push('🎯 愿望清单：' + couple.wishes.filter(function(w){return w.done;}).length + '/' + couple.wishes.length + ' 实现');
+        }
+        lines.push('');
+      }
+      var sorted = letters.slice().sort(function(a,b){ return a.timestamp - b.timestamp; });
+      sorted.forEach(function(l) {
+        var emo = l.emotionLabel || (emotionByLevel(l.emotionLevel) || {}).label || '';
+        lines.push('========================================');
+        lines.push('时间：' + formatDateShort(l.timestamp));
+        lines.push('心情：' + emo + (l.pinned ? '  [置顶]' : '') + (l.starred ? '  [收藏]' : ''));
+        if (l.tags && l.tags.length) lines.push('标签：' + l.tags.join(', '));
+        lines.push('----------------------------------------');
+        lines.push(l.content);
+        if (l.resolution) { lines.push(''); lines.push('【情绪如何消解】'); lines.push(l.resolution); }
+        lines.push('');
+      });
+      var d = new Date();
+      download('星星瓶子_信件_' + d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate()) + '.txt', lines.join('\n'), 'text/plain;charset=utf-8');
+      showToast('已导出 TXT 文本');
+    }
+    function importData() {
+      document.getElementById('importFile').click();
+    }
+    function handleImport(event) {
+      var file = event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var text = e.target.result;
+        openConfirm('导入数据？', '将导入文件中的信件。若文件里带星形配色等完整数据会完整恢复；仅 txt 的也会尝试解析。\n\n是否替换当前所有信件？选择"确定"会用导入内容替换，选择"取消"则会合并追加。', '替换全部', false);
+        confirmCallback = function() { applyImport(text, true); };
+        // 提供"追加"选项：通过另一个确认
+      };
+      reader.readAsText(file);
+    }
+    function applyImport(text, replace) {
+      try {
+        var parsed;
+        var importCouple = null;
+        var trimmed = text.trim();
+        if (trimmed.charAt(0) === '[' || trimmed.charAt(0) === '{') {
+          // JSON
+          var obj = JSON.parse(trimmed);
+          if (Array.isArray(obj)) {
+            parsed = obj;
+          } else if (obj.letters) {
+            parsed = obj.letters;
+            if (obj.couple && typeof obj.couple === 'object') importCouple = obj.couple;
+          } else {
+            parsed = [obj];
+          }
+        } else {
+          // 尝试解析 txt
+          parsed = parseTxt(text);
+        }
+        var valid = parsed.filter(function(l){ return l && l.content; });
+        if (!valid.length && !importCouple) { closeConfirm(); showToast('未识别到有效信件'); return; }
+        if (replace) {
+          letters = valid;
+          if (importCouple) {
+            couple.startDate = importCouple.startDate || couple.startDate;
+            couple.anniversaries = importCouple.anniversaries || [];
+            couple.events = importCouple.events || [];
+            couple.wishes = importCouple.wishes || [];
+          }
+        } else {
+          // 合并：按 id 去重追加
+          var existingIds = {};
+          letters.forEach(function(l){ if(l.id!==undefined) existingIds[l.id]=1; });
+          valid.forEach(function(l){
+            if (!l.id) l.id = Date.now() + Math.floor(Math.random()*1000);
+            if (!existingIds[l.id]) { letters.push(l); existingIds[l.id]=1; }
+          });
+          if (importCouple) {
+            if (importCouple.startDate && !couple.startDate) couple.startDate = importCouple.startDate;
+            var hasAnni = {};
+            couple.anniversaries.forEach(function(a){ hasAnni[a.id || a.title+a.date]=1; });
+            (importCouple.anniversaries || []).forEach(function(a){ if(!hasAnni[a.id || a.title+a.date]){ a.id = a.id || Date.now()+Math.random(); couple.anniversaries.push(a); hasAnni[a.id]=1; } });
+            couple.events = couple.events.concat(importCouple.events || []);
+            var hasWish = {};
+            couple.wishes.forEach(function(w){ hasWish[w.text]=1; });
+            (importCouple.wishes || []).forEach(function(w){ if(!hasWish[w.text]){ w.id = w.id || Date.now()+Math.random(); couple.wishes.push(w); hasWish[w.text]=1; } });
+          }
+        }
+        saveLetters();
+        saveCouple();
+        rebuildStars();
+        closeConfirm();
+        renderLettersList();
+        renderCoupleBadge();
+        showToast('导入成功，共 ' + valid.length + ' 封信件');
+      } catch(err) {
+        closeConfirm();
+        showToast('导入失败：文件格式无法识别');
+      }
+    }
+    function parseTxt(text) {
+      // 简单解析 txt 备份：按 "============" 分块
+      var blocks = text.split(/={10,}/);
+      var out = [];
+      for (var i = 0; i < blocks.length; i++) {
+        var b = blocks[i];
+        var timeM = b.match(/时间：(.*?)\n/);
+        var emoM = b.match(/心情：(.*?)\n/);
+        var content = b.split(/----+/)[1];
+        if (content) {
+          content = content.replace(/【情绪如何消解】[\s\S]*$/,'').trim();
+          var letter = { id: Date.now()+i, timestamp: Date.now(), content: content, resolution: '', emotionLabel: '平静' };
+          if (timeM && timeM[1]) {
+            // 尝试解析 月日 时:分
+            var t = parseShortTime(timeM[1]);
+            if (t) letter.timestamp = t;
+          }
+          if (emoM && emoM[1]) {
+            var lbl = emoM[1].replace(/\[[^\]]*\]/g,'').trim();
+            if (emotionByLabel(lbl)) letter.emotionLabel = lbl;
+          }
+          out.push(letter);
+        }
+      }
+      return out;
+    }
+    function parseShortTime(str) {
+      var m = str.match(/(\d{1,2})月(\d{1,2})日\s*(\d{1,2}):(\d{1,2})/);
+      if (m) {
+        var now = new Date();
+        return new Date(now.getFullYear(), Number(m[1])-1, Number(m[2]), Number(m[3]), Number(m[4])).getTime();
+      }
+      return null;
+    }
+
+    /* ===== Stats ===== */
+    function openStats() {
+      closeMoreModal();
+      renderStats();
+      document.getElementById('statsModal').classList.add('active');
+    }
+    function renderStats() {
+      var body = document.getElementById('statsBody');
+      var total = letters.length;
+      var html = '';
+      // 摘要
+      var starredCount = letters.filter(function(l){ return l.starred; }).length;
+      var resCount = letters.filter(function(l){ return l.resolution && l.resolution.trim(); }).length;
+      html += '<div class="stats-summary">' +
+        '<div class="stat-num"><div class="v">' + total + '</div><div class="l">信件总数</div></div>' +
+        '<div class="stat-num"><div class="v">' + starredCount + '</div><div class="l">收藏</div></div>' +
+        '<div class="stat-num"><div class="v">' + resCount + '</div><div class="l">已记录消解</div></div>' +
+      '</div>';
+
+      // 各情绪占比（饼图）
+      html += '<div class="stats-section"><div class="stats-title">心情分布</div>';
+      if (total === 0) {
+        html += '<div class="empty-state" style="padding:30px;"><p>还没有数据</p></div>';
+      } else {
+        html += '<div class="pie-wrap"><canvas id="pieCanvas" class="pie-canvas"></canvas><div class="pie-legend" id="pieLegend"></div></div>';
+      }
+      html += '</div>';
+
+      // 每月趋势（堆叠柱状图）
+      html += '<div class="stats-section"><div class="stats-title">每月心情趋势</div>';
+      if (total === 0) {
+        html += '<div class="empty-state" style="padding:20px;"><p>还没有数据</p></div>';
+      } else {
+        html += '<div class="bar-wrap" id="trendBars"></div>';
+      }
+      html += '</div>';
+
+      body.innerHTML = html;
+
+      if (total > 0) {
+        drawPie();
+        drawTrend();
+      }
+    }
+    function drawPie() {
+      var canvas = document.getElementById('pieCanvas');
+      var legend = document.getElementById('pieLegend');
+      if (!canvas || !legend) return;
+      var counts = {};
+      letters.forEach(function(l){
+        var emo = emotionByLabel(l.emotionLabel) || emotionByLevel(l.emotionLevel);
+        var key = emo ? emo.label : '其他';
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      var ctx = canvas.getContext('2d');
+      var size = 150, cx = size/2, cy = size/2, r = size/2 - 4;
+      canvas.width = size; canvas.height = size;
+      ctx.clearRect(0,0,size,size);
+      var total = letters.length;
+      var start = -Math.PI/2;
+      var legendHTML = '';
+      Object.keys(counts).forEach(function(label){
+        var emo = emotionByLabel(label);
+        var color = emo ? emo.color : '#8a7a6a';
+        var pct = counts[label]/total;
+        var end = start + pct*2*Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r,start,end);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#1e1a28';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        start = end;
+        legendHTML += '<div class="pie-legend-item"><span class="dot" style="background:'+color+'"></span>' + label + '<span class="pct">' + Math.round(pct*100) + '% (' + counts[label] + ')</span></div>';
+      });
+      // 中心文字
+      ctx.beginPath();
+      ctx.arc(cx,cy,r*0.55,0,2*Math.PI);
+      ctx.fillStyle = '#1e1a28';
+      ctx.fill();
+      ctx.fillStyle = '#f5e6d3';
+      ctx.font = 'bold 20px "ZCOOL KuaiLe", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(total, cx, cy);
+      ctx.font = '11px "Noto Serif SC", serif';
+      ctx.fillText('封', cx, cy+14);
+      legend.innerHTML = legendHTML;
+    }
+    function drawTrend() {
+      var wrap = document.getElementById('trendBars');
+      if (!wrap) return;
+      // 按月分组
+      var months = {};
+      var emoColors = {};
+      EMOTIONS.forEach(function(e){ emoColors[e.label] = e.color; });
+      letters.forEach(function(l){
+        var d = new Date(l.timestamp);
+        var key = d.getFullYear() + '-' + pad2(d.getMonth()+1);
+        var emo = (emotionByLabel(l.emotionLabel) || emotionByLevel(l.emotionLevel) || {label:'其他'}).label;
+        if (!months[key]) months[key] = {};
+        months[key][emo] = (months[key][emo] || 0) + 1;
+      });
+      var keys = Object.keys(months).sort();
+      // 只显示最近 12 个月
+      keys = keys.slice(-12);
+      if (!keys.length) return;
+      wrap.innerHTML = '';
+      keys.forEach(function(key){
+        var col = document.createElement('div');
+        col.className = 'bar-col';
+        var stack = document.createElement('div');
+        stack.className = 'bar-stack';
+        var m = months[key];
+        var segCount = Object.keys(m).reduce(function(s,k){ return s+m[k]; }, 0);
+        Object.keys(m).forEach(function(emo){
+          var seg = document.createElement('div');
+          seg.className = 'bar-seg';
+          seg.style.height = (m[emo]/segCount*100) + '%';
+          seg.style.background = emoColors[emo] || '#8a7a6a';
+          seg.title = emo + ' ' + m[emo] + '封';
+          stack.appendChild(seg);
+        });
+        var label = key.split('-')[1] + '月';
+        col.appendChild(stack);
+        var cnt = document.createElement('div');
+        cnt.className = 'bar-count';
+        cnt.textContent = segCount;
+        col.appendChild(cnt);
+        var lb = document.createElement('div');
+        lb.className = 'bar-label';
+        lb.textContent = label;
+        col.appendChild(lb);
+        wrap.appendChild(col);
+      });
+    }
+
+    /* ===== Calendar ===== */
+    var calYear = new Date().getFullYear();
+    var calMonth = new Date().getMonth();
+    var calSelected = null;
+    function openCalendar() {
+      closeMoreModal();
+      calYear = new Date().getFullYear();
+      calMonth = new Date().getMonth();
+      calSelected = null;
+      renderCalendar();
+      document.getElementById('calModal').classList.add('active');
+    }
+    function renderCalendar() {
+      var body = document.getElementById('calBody');
+      var html = '';
+      html += '<div class="cal-nav">' +
+        '<button class="cal-nav-btn" onclick="calPrev()">‹</button>' +
+        '<div class="cal-nav-title">' + calYear + '年' + (calMonth+1) + '月</div>' +
+        '<button class="cal-nav-btn" onclick="calNext()">›</button>' +
+      '</div>';
+      html += '<div class="cal-grid">';
+      ['日','一','二','三','四','五','六'].forEach(function(d){ html += '<div class="cal-dow">' + d + '</div>'; });
+      var first = new Date(calYear, calMonth, 1);
+      var startDow = first.getDay();
+      var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+      for (var i = 0; i < startDow; i++) html += '<div class="cal-day empty"></div>';
+      var now = new Date();
+      for (var day = 1; day <= daysInMonth; day++) {
+        var dateKey = calYear + '-' + pad2(calMonth+1) + '-' + pad2(day);
+        var isToday = (now.getFullYear()===calYear && now.getMonth()===calMonth && now.getDate()===day);
+        var dayLetters = letters.filter(function(l){
+          var d = new Date(l.timestamp);
+          return d.getFullYear()===calYear && d.getMonth()===calMonth && d.getDate()===day;
+        });
+        var dots = '';
+        if (dayLetters.length) {
+          var shown = dayLetters.slice(0,3);
+          dots = '<div class="cal-dots">' + shown.map(function(l){
+            var emo = emotionByLabel(l.emotionLabel) || emotionByLevel(l.emotionLevel);
+            var c = (l.starColors && l.starColors.base) || (emo ? emo.color : '#F4D03F');
+            return '<span class="cal-dot" style="background:' + c + '"></span>';
+          }).join('') + '</div>';
+        }
+        html += '<div class="cal-day' + (isToday?' today':'') + (calSelected===dateKey?' selected':'') + '" data-key="' + dateKey + '" onclick="calPick(\'' + dateKey + '\')">' + day + dots + '</div>';
+      }
+      html += '</div>';
+      html += '<div class="cal-day-list" id="calDayList"></div>';
+      body.innerHTML = html;
+      if (calSelected) {
+        renderCalDayList(calSelected);
+      }
+    }
+    function calPick(dateKey) {
+      calSelected = dateKey;
+      renderCalendar();
+    }
+    function calPrev() {
+      calMonth--;
+      if (calMonth < 0) { calMonth = 11; calYear--; }
+      calSelected = null;
+      renderCalendar();
+    }
+    function calNext() {
+      calMonth++;
+      if (calMonth > 11) { calMonth = 0; calYear++; }
+      calSelected = null;
+      renderCalendar();
+    }
+    function renderCalDayList(dateKey) {
+      var listEl = document.getElementById('calDayList');
+      if (!listEl) return;
+      var parts = dateKey.split('-');
+      var y = Number(parts[0]), m = Number(parts[1])-1, d = Number(parts[2]);
+      var dayLetters = letters.filter(function(l){
+        var dd = new Date(l.timestamp);
+        return dd.getFullYear()===y && dd.getMonth()===m && dd.getDate()===d;
+      }).sort(function(a,b){ return a.timestamp - b.timestamp; });
+      if (!dayLetters.length) {
+        listEl.innerHTML = '<div class="cal-day-title">' + (m+1) + '月' + d + '日 · 没有信件</div>';
+        return;
+      }
+      var html = '<div class="cal-day-title">' + (m+1) + '月' + d + '日 · ' + dayLetters.length + ' 封信</div>';
+      dayLetters.forEach(function(l){
+        var emo = emotionByLabel(l.emotionLabel) || emotionByLevel(l.emotionLevel);
+        var emoColor = (l.starColors && l.starColors.base) || (emo ? emo.color : '#F4D03F');
+        var dTime = new Date(l.timestamp);
+        html += '<div class="cal-letter" style="--emo-color:' + emoColor + '">' +
+          '<div class="cl-top"><span class="cl-emo">' + escapeHTML(l.emotionLabel || (emo?emo.label:'')) + '</span>' +
+          '<span class="cl-time">' + pad2(dTime.getHours()) + ':' + pad2(dTime.getMinutes()) + '</span></div>' +
+          '<div class="cl-content">' + escapeHTML(l.content) + '</div></div>';
+      });
+      listEl.innerHTML = html;
+    }
+
+    /* ===== Fold Animation & Save ===== */
+    function foldAndSave() {
+      var text = document.getElementById('letterText').value.trim();
+      if (!selectedEmotion || !text) return;
+
+      var now = new Date();
+      // 星星颜色与情绪绑定
+      var starColors = generateStarColors(Date.now(), selectedEmotion);
+      var tags = parseTags(document.getElementById('writeTags').value || '');
+      var letter = {
+        id: Date.now(),
+        emotionLevel: selectedEmotion.level,
+        emotionLabel: selectedEmotion.label,
+        starColors: starColors,
+        content: text,
+        timestamp: now.getTime(),
+        resolution: '',
+        starred: false,
+        pinned: false,
+        tags: tags
+      };
+      letters.push(letter);
+      saveLetters();
+      renderHomeQuick();
+
+      closeWriteModal();
+
+      var overlay = document.getElementById('foldOverlay');
+      var paper = document.getElementById('paperFold');
+      var star = document.getElementById('starFold');
+
+      star.innerHTML = createStarSVG(starColors, 56);
+      overlay.classList.add('active');
+
+      paper.classList.remove('folding');
+      star.classList.remove('appearing', 'dropping');
+      paper.style.opacity = '0';
+      star.style.opacity = '0';
+      star.style.transform = 'scale(0)';
+
+      void paper.offsetWidth;
+
+      setTimeout(function() {
+        paper.style.opacity = '1';
+        paper.classList.add('folding');
+      }, 200);
+
+      setTimeout(function() {
+        paper.style.opacity = '0';
+        star.classList.add('appearing');
+      }, 750);
+
+      setTimeout(function() {
+        star.classList.remove('appearing');
+        star.classList.add('dropping');
+      }, 1350);
+
+      setTimeout(function() {
+        overlay.classList.remove('active');
+        var bottle = document.getElementById('bottle');
+        bottle.classList.add('jiggle');
+        addNewStar(letters.length - 1);
+        setTimeout(function() { bottle.classList.remove('jiggle'); }, 400);
+      }, 2150);
+    }
+
+    /* ===== Shake Detection & Star Shake ===== */
+    var isShaking = false;
+    function shakeBottle() {
+      if (isShaking) return;
+      isShaking = true;
+      var bottle = document.getElementById('bottle');
+      bottle.classList.remove('big-shake');
+      void bottle.offsetWidth;
+      bottle.classList.add('big-shake');
+      shakeStars();
+      setTimeout(function() {
+        bottle.classList.remove('big-shake');
+        isShaking = false;
+      }, 1000);
+    }
+
+    var lastShakeCheck = 0;
+    var lastAcc = { x: 0, y: 0, z: 0 };
+    function onDeviceMotion(e) {
+      var acc = e.accelerationIncludingGravity;
+      if (!acc) return;
+      var now = Date.now();
+      if (now - lastShakeCheck < 150) return;
+      lastShakeCheck = now;
+      var dx = Math.abs(acc.x - lastAcc.x);
+      var dy = Math.abs(acc.y - lastAcc.y);
+      var dz = Math.abs(acc.z - lastAcc.z);
+      lastAcc.x = acc.x; lastAcc.y = acc.y; lastAcc.z = acc.z;
+      if (dx + dy + dz > 30) shakeBottle();
+    }
+
+    function initShakeDetection() {
+      var isMobile = /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry/i.test(navigator.userAgent);
+      if (isMobile) {
+        document.body.classList.remove('is-desktop');
+        var hint = document.getElementById('hint');
+        if (hint) hint.textContent = '轻触瓶身 · 摇晃手机，星星会晃荡';
+      } else {
+        document.body.classList.add('is-desktop');
+      }
+      if (window.DeviceMotionEvent) {
+        var req = DeviceMotionEvent.requestPermission;
+        if (typeof req === 'function') {
+          var bottle = document.getElementById('bottle');
+          function askOnce() {
+            req.call(DeviceMotionEvent).then(function(state) {
+              if (state === 'granted') window.addEventListener('devicemotion', onDeviceMotion);
+            }).catch(function() {});
+            bottle.removeEventListener('click', askOnce);
+          }
+          bottle.addEventListener('click', askOnce);
+        } else {
+          window.addEventListener('devicemotion', onDeviceMotion);
+        }
+      }
+      var shakeBtn = document.getElementById('shakeBtn');
+      if (shakeBtn) shakeBtn.addEventListener('click', shakeBottle);
+    }
+
+    /* ===== Event Listeners ===== */
+    document.getElementById('bottle').addEventListener('click', openMenu);
+    document.getElementById('writeBtn').addEventListener('click', openWriteModal);
+    document.getElementById('viewBtn').addEventListener('click', openViewModal);
+    document.getElementById('moreBtn').addEventListener('click', openMoreModal);
+    document.getElementById('closeWrite').addEventListener('click', closeWriteModal);
+    document.getElementById('closeView').addEventListener('click', closeViewModal);
+    document.getElementById('closeMore').addEventListener('click', closeMoreModal);
+    document.getElementById('closeStats').addEventListener('click', function(){ document.getElementById('statsModal').classList.remove('active'); });
+    document.getElementById('closeCal').addEventListener('click', function(){ document.getElementById('calModal').classList.remove('active'); });
+    document.getElementById('foldBtn').addEventListener('click', foldAndSave);
+    document.getElementById('letterText').addEventListener('input', updateFoldBtn);
+
+    // 搜索输入
+    document.getElementById('searchInput').addEventListener('input', renderLettersList);
+    // 置顶/收藏筛选
+    document.getElementById('filterPinned').addEventListener('click', function(){
+      currentPinnedFilter = !currentPinnedFilter;
+      this.classList.toggle('active', currentPinnedFilter);
+      renderLettersList();
+    });
+    document.getElementById('filterStarred').addEventListener('click', function(){
+      currentStarredFilter = !currentStarredFilter;
+      this.classList.toggle('active', currentStarredFilter);
+      renderLettersList();
+    });
+
+    // 更多菜单
+    document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+    document.getElementById('exportTxtBtn').addEventListener('click', exportTxt);
+    document.getElementById('importBtn').addEventListener('click', importData);
+    document.getElementById('importFile').addEventListener('change', handleImport);
+    document.getElementById('statsBtn').addEventListener('click', openStats);
+    document.getElementById('calendarBtn').addEventListener('click', openCalendar);
+
+    // 情侣功能入口
+    document.getElementById('cpSpaceBtn').addEventListener('click', openCpSpace);
+    document.getElementById('cpEnergyBtn').addEventListener('click', openCpEnergy);
+    document.getElementById('cpWishBtn').addEventListener('click', openCpWish);
+    document.getElementById('cpEventBtn').addEventListener('click', openCpEvent);
+
+    // 主界面情侣快捷入口（直接打开对应功能）
+    document.getElementById('hqSpace').addEventListener('click', function(){ openCpSpace(); });
+    document.getElementById('hqEnergy').addEventListener('click', function(){ openCpEnergy(); });
+    document.getElementById('hqWish').addEventListener('click', function(){ openCpWish(); });
+    document.getElementById('hqEvent').addEventListener('click', function(){ openCpEvent(); });
+    document.getElementById('closeCpSpace').addEventListener('click', function(){ document.getElementById('cpSpaceModal').classList.remove('active'); });
+    document.getElementById('closeCpEnergy').addEventListener('click', function(){ document.getElementById('cpEnergyModal').classList.remove('active'); });
+    document.getElementById('closeCpWish').addEventListener('click', function(){ document.getElementById('cpWishModal').classList.remove('active'); });
+    document.getElementById('closeCpEvent').addEventListener('click', function(){ document.getElementById('cpEventModal').classList.remove('active'); });
+
+    // 确认框
+    document.getElementById('confirmOk').addEventListener('click', function(){
+      if (confirmCallback) { confirmCallback(); } else { closeConfirm(); }
+    });
+    document.getElementById('confirmCancel').addEventListener('click', closeConfirm);
+
+    // 点击外部关闭
+    document.getElementById('menuOverlay').addEventListener('click', function(e) { if (e.target === this) closeMenu(); });
+    document.getElementById('writeModal').addEventListener('click', function(e) { if (e.target === this) closeWriteModal(); });
+    document.getElementById('viewModal').addEventListener('click', function(e) { if (e.target === this) closeViewModal(); });
+    document.getElementById('moreModal').addEventListener('click', function(e) { if (e.target === this) closeMoreModal(); });
+    document.getElementById('statsModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+    document.getElementById('calModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+    document.getElementById('cpSpaceModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+    document.getElementById('cpEnergyModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+    document.getElementById('cpWishModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+    document.getElementById('cpEventModal').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+    document.getElementById('confirmModal').addEventListener('click', function(e) { if (e.target === this) closeConfirm(); });
+
+    // Prevent body scroll on touch
+    document.addEventListener('touchmove', function(e) {
+      if (e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT' && !e.target.closest('.letters-list') && !e.target.closest('.card-content') && !e.target.closest('.cal-body') && !e.target.closest('.cp-body')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    /* ===== 情侣功能 ===== */
+
+    // 瓶子问候语：每次进入随机展示一句
+    var GREETINGS = [
+      '今天心情怎么样呀？✨',
+      '晓冉，今天有什么有趣的事想分享吗？',
+      '晓冉，此刻的心情想折成星星吗？',
+      '把今天的小确幸，悄悄放进瓶子里吧 💛',
+      '晓冉，我们的每一天都值得收藏 ✦',
+      '今天过得怎么样？想聊的话我一直在',
+      '有什么心事，都可以写进这颗星星里',
+      '窗外风清月朗，此刻你在想谁呢？',
+      '一个小小的拥抱，送给你 💌',
+      '记得今天也要好好照顾自己哦',
+      '想给你看看今天的星星，也看见了你',
+      '把烦恼折进星星，把温暖留给自己',
+    ];
+    function showGreeting() {
+      var el = document.getElementById('greeting');
+      if (!el) return;
+      // 保证每次进入/刷新都随机（避免连续重复可用随机）
+      var idx = Math.floor(Math.random() * GREETINGS.length);
+      var text = GREETINGS[idx];
+      // 若文字以语气词开头，随机加一个表情
+      el.innerHTML = text;
+    }
+
+    // 主界面"在一起天数"徽章 + 最近纪念日倒计时
+    function renderCoupleBadge() {
+      var badge = document.getElementById('coupleBadge');
+      if (!badge) return;
+      if (!couple.startDate) { badge.style.display = 'none'; }
+      else { badge.style.display = 'flex'; }
+      var days = daysTogether();
+      document.getElementById('togetherDays').textContent = days;
+      // 最近纪念日
+      var anniEl = document.getElementById('nextAnni');
+      if (anniEl) {
+        var next = nextAnniversary();
+        if (next) {
+          var d = daysUntil(next.date);
+          if (d !== null) {
+            var tag = d === 0 ? '就是今天 💝' : (d < 0 ? '已过去' : '还有 ' + d + ' 天');
+            anniEl.innerHTML = '🎂 ' + escapeHTML(next.title) + ' · <b>' + tag + '</b>';
+          } else {
+            anniEl.innerHTML = '';
+          }
+        } else {
+          anniEl.innerHTML = '';
+        }
+      }
+      renderHomeQuick();
+    }
+
+    // 主界面情侣快捷栏：动态数字
+    function renderHomeQuick() {      var spaceSub = document.getElementById('hqSpaceSub');
+      if (spaceSub) spaceSub.textContent = couple.startDate ? daysTogether() + '天' : '未设置';
+      var energySub = document.getElementById('hqEnergySub');
+      if (energySub) {
+        var es = energyScore();
+        energySub.textContent = es + '分';
+        energySub.style.color = es >= 60 ? 'rgba(231,120,90,0.9)' : (es >= 40 ? 'rgba(255,217,61,0.8)' : 'rgba(150,160,180,0.7)');
+      }
+      var wishBadge = document.getElementById('hqWishBadge');
+      if (wishBadge) {
+        var done = couple.wishes.filter(function(w){ return w.done; }).length;
+        var total = couple.wishes.length;
+        wishBadge.textContent = done + '/' + total;
+        wishBadge.classList.toggle('hidden-badge', total === 0);
+      }
+      var wishSub = document.getElementById('hqWishSub');
+      if (wishSub) {
+        var done = couple.wishes.filter(function(w){ return w.done; }).length;
+        var total = couple.wishes.length;
+        wishSub.textContent = total ? (done + '/' + total + ' 完成') : '许个愿吧';
+      }
+      var evtBadge = document.getElementById('hqEventBadge');
+      if (evtBadge) {
+        evtBadge.textContent = couple.events.length;
+        evtBadge.classList.toggle('hidden-badge', couple.events.length === 0);
+      }
+      var evtSub = document.getElementById('hqEventSub');
+      if (evtSub) {
+        evtSub.textContent = couple.events.length ? (couple.events.length + ' 条回忆') : '记一笔吧';
+      }
+    }
+    function nextAnniversary() {
+      if (!couple.anniversaries || !couple.anniversaries.length) return null;
+      var list = couple.anniversaries.slice();
+      list.sort(function(a, b) { return daysUntil(a.date) - daysUntil(b.date); });
+      return list[0];
+    }
+
+    // —— 情侣空间（在一起日期 + 纪念日 + 成就）——
+    function openCpSpace() {
+      closeMoreModal();
+      renderCpSpace();
+      document.getElementById('cpSpaceModal').classList.add('active');
+    }
+    function renderCpSpace() {
+      var body = document.getElementById('cpSpaceBody');
+      var html = '';
+      // 在一起日期设置
+      html += '<div class="cp-start-card">';
+      html += '<div class="cp-label">我们的纪念日（在一起的那一天）</div>';
+      html += '<div class="cp-start-row">' +
+                '<input type="date" id="cpStartDate" value="' + (couple.startDate || '') + '">' +
+                '<button class="cp-btn primary" onclick="setStartDate()">保存日期</button>' +
+              '</div>';
+      if (couple.startDate) {
+        html += '<div class="cp-start-days">我们已经在一起 <b>' + daysTogether() + '</b> 天 ❤</div>';
+      } else {
+        html += '<div class="cp-start-days" style="color:rgba(245,230,211,0.4);">设置后，主页会显示我们在一起的每一天</div>';
+      }
+      html += '</div>';
+
+      // 纪念日管理
+      html += '<div class="cp-sub">🎂 纪念日</div>';
+      html += '<div class="anni-list">';
+      if (couple.anniversaries.length) {
+        couple.anniversaries.forEach(function(a) {
+          var du = daysUntil(a.date);
+          var tag = du === null ? '' : (du === 0 ? '今天!' : (du < 0 ? '今年已过' : du + '天后'));
+          html += '<div class="anni-item">' +
+            '<div class="ai-date">' + escapeHTML(a.date) + '</div>' +
+            '<div class="ai-title">' + escapeHTML(a.title) + '</div>' +
+            '<div class="ai-count">' + escapeHTML(tag) + '</div>' +
+            '<button class="ai-del" onclick="delAnniversary(' + a.id + ')">✕</button>' +
+          '</div>';
+        });
+      } else {
+        html += '<div class="cp-empty">还没有纪念日，添加一个吧（比如"在一起100天"）</div>';
+      }
+      html += '</div>';
+      html += '<div class="anni-add-row">' +
+                '<input id="anniTitle" placeholder="纪念日名称，如：在一起100天">' +
+                '<input type="date" id="anniDate">' +
+                '<button class="cp-btn primary" onclick="addAnniversary()">添加</button>' +
+              '</div>';
+
+      // 成就
+      html += '<div class="cp-sub">🏆 我们的成就</div>';
+      html += '<div class="cp-achievements">' +
+        '<div class="cp-ach-item"><div class="aa-icon">❤️</div><div class="aa-num">' + daysTogether() + '天</div><div class="aa-label">在一起</div></div>' +
+        '<div class="cp-ach-item"><div class="aa-icon">⭐</div><div class="aa-num">' + letters.length + '</div><div class="aa-label">星星信件</div></div>' +
+        '<div class="cp-ach-item"><div class="aa-icon">🎯</div><div class="aa-num">' + (couple.wishes.filter(function(w){return w.done;}).length) + '/' + couple.wishes.length + '</div><div class="aa-label">愿望完成</div></div>' +
+        '<div class="cp-ach-item"><div class="aa-icon">📖</div><div class="aa-num">' + couple.events.length + '</div><div class="aa-label">共同回忆</div></div>' +
+      '</div>';
+
+      body.innerHTML = html;
+    }
+    function setStartDate() {
+      var v = document.getElementById('cpStartDate').value;
+      if (!v) { showToast('请选择日期'); return; }
+      couple.startDate = v;
+      saveCouple();
+      renderCpSpace();
+      renderCoupleBadge();
+      showToast('已保存，我们在一起 ' + daysTogether() + ' 天了 ❤');
+    }
+    function addAnniversary() {
+      var title = (document.getElementById('anniTitle').value || '').trim();
+      var date = document.getElementById('anniDate').value;
+      if (!title || !date) { showToast('请填写名称和日期'); return; }
+      couple.anniversaries.push({ id: Date.now(), title: title, date: date });
+      saveCouple();
+      renderCpSpace();
+      renderCoupleBadge();
+      showToast('纪念日已添加 🎂');
+    }
+    function delAnniversary(id) {
+      couple.anniversaries = couple.anniversaries.filter(function(a) { return a.id !== id; });
+      saveCouple();
+      renderCpSpace();
+      renderCoupleBadge();
+    }
+
+    // —— 关系能量 ——
+    function openCpEnergy() {
+      closeMoreModal();
+      renderCpEnergy();
+      document.getElementById('cpEnergyModal').classList.add('active');
+    }
+    // 计算关系能量：积极情绪(开心/平静)加分，消极(难过/生气/焦虑/疲惫)减分
+    function energyScore() {
+      if (!letters.length) return 50;
+      var score = 50;
+      letters.forEach(function(l) {
+        var emo = emotionByLabel(l.emotionLabel) || emotionByLevel(l.emotionLevel);
+        if (!emo) return;
+        switch (emo.level) {
+          case 1: score += 3; break;  // 开心
+          case 4: score += 1.5; break; // 平静
+          case 2: score -= 2; break;  // 难过
+          case 3: score -= 2.5; break; // 生气
+          case 5: score -= 1.5; break; // 焦虑
+          case 6: score -= 1; break;  // 疲惫
+        }
+      });
+      // 愿望完成加分
+      score += couple.wishes.filter(function(w){ return w.done; }).length * 1.5;
+      // 共同回忆加分
+      score += couple.events.length * 0.5;
+      score = Math.max(5, Math.min(100, Math.round(score)));
+      return score;
+    }
+    function energyLevel(score) {
+      if (score >= 80) return { label: '热恋满满 💖', hint: '你们的感情浓烈炽热，多记录这些美好时刻吧！' };
+      if (score >= 60) return { label: '甜蜜升温 💕', hint: '感情稳定甜蜜，继续保持这份温度。' };
+      if (score >= 40) return { label: '平淡相守 🤍', hint: '感情趋于平稳，偶尔制造一点小惊喜吧。' };
+      if (score >= 20) return { label: '需要浇灌 🌱', hint: '最近负面情绪有点多，多和对方聊聊、一起做点开心的事。' };
+      return { label: '需要呵护 💔', hint: '感情有些疲惫了，好好沟通，互相理解最重要。' };
+    }
+    function renderCpEnergy() {
+      var body = document.getElementById('cpEnergyBody');
+      var score = energyScore();
+      var lv = energyLevel(score);
+      // 情绪分类统计
+      var pos = 0, neg = 0;
+      letters.forEach(function(l) {
+        var emo = emotionByLabel(l.emotionLabel) || emotionByLevel(l.emotionLevel);
+        if (!emo) return;
+        if (emo.level === 1 || emo.level === 4) pos++;
+        else if (emo.level === 2 || emo.level === 3 || emo.level === 5 || emo.level === 6) neg++;
+      });
+      var total = pos + neg;
+      var html = '';
+      html += '<div class="energy-card">' +
+        '<div class="ec-label">当前关系能量</div>' +
+        '<div class="ec-value">' + score + '<span> / 100</span></div>' +
+        '<div class="energy-bar"><div class="eb-fill" style="width:' + score + '%"></div></div>' +
+        '<div class="ec-hint">' + escapeHTML(lv.label) + '</div>' +
+      '</div>';
+      html += '<div class="energy-break">' +
+        '<span class="tag">😊 积极 <b>' + pos + '</b></span>' +
+        '<span class="tag">🌧 消极 <b>' + neg + '</b></span>' +
+        '<span class="tag">🎯 愿望 <b>' + couple.wishes.filter(function(w){return w.done;}).length + '</b></span>' +
+      '</div>';
+      html += '<div class="cp-sub">💬 能量解读</div>' +
+        '<div style="font-size:13px;color:rgba(245,230,211,0.75);line-height:1.8;">' + escapeHTML(lv.hint) + '</div>';
+      html += '<div class="cp-sub">📈 情绪构成</div>';
+      if (total > 0) {
+        var posPct = Math.round(pos / total * 100);
+        var negPct = 100 - posPct;
+        html += '<div class="energy-bar" style="height:16px;"><div class="eb-fill" style="width:' + posPct + '%;background:linear-gradient(90deg,#f4d03f,#e74c3c);"></div></div>' +
+          '<div class="energy-break">' +
+            '<span class="tag" style="color:#ffd57a;">积极占 <b>' + posPct + '%</b></span>' +
+            '<span class="tag" style="color:#7aa8d9;">消极占 <b>' + negPct + '%</b></span>' +
+          '</div>';
+      } else {
+        html += '<div class="cp-empty">写几封信后，这里会展示你们的情绪构成。</div>';
+      }
+      body.innerHTML = html;
+    }
+
+    // —— 愿望清单 ——
+    function openCpWish() {
+      closeMoreModal();
+      renderCpWish();
+      document.getElementById('cpWishModal').classList.add('active');
+    }
+    function renderCpWish() {
+      var body = document.getElementById('cpWishBody');
+      var doneCount = couple.wishes.filter(function(w){ return w.done; }).length;
+      var pct = couple.wishes.length ? Math.round(doneCount / couple.wishes.length * 100) : 0;
+      var html = '';
+      if (couple.wishes.length) {
+        html += '<div class="wish-progress">' +
+          '<div class="wp-bar"><div class="wp-fill" style="width:' + pct + '%"></div></div>' +
+          '<div class="wp-text">' + doneCount + '/' + couple.wishes.length + ' 已实现（' + pct + '%）</div>' +
+        '</div>';
+      }
+      html += '<div class="wish-list">';
+      if (!couple.wishes.length) {
+        html += '<div class="cp-empty">还没有愿望，写下你们想一起完成的事吧 🌟</div>';
+      } else {
+        couple.wishes.forEach(function(w) {
+          html += '<div class="wish-item' + (w.done ? ' done' : '') + '">' +
+            '<button class="wish-check" onclick="toggleWish(' + w.id + ')">✓</button>' +
+            '<div class="wi-text">' + escapeHTML(w.text) + '</div>' +
+            '<button class="wi-del" onclick="delWish(' + w.id + ')">✕</button>' +
+          '</div>';
+        });
+      }
+      html += '</div>';
+      html += '<div class="wish-add-row">' +
+        '<input id="wishText" placeholder="想一起完成的愿望…" onkeydown="if(event.key===\'Enter\')addWish()">' +
+        '<button class="cp-btn primary" onclick="addWish()">许愿</button>' +
+      '</div>';
+      body.innerHTML = html;
+    }
+    function addWish() {
+      var text = (document.getElementById('wishText').value || '').trim();
+      if (!text) { showToast('请输入愿望内容'); return; }
+      couple.wishes.push({ id: Date.now(), text: text, done: false, date: Date.now() });
+      saveCouple();
+      renderCpWish();
+      showToast('已许下愿望 🌟');
+    }
+    function toggleWish(id) {
+      var w = couple.wishes.find(function(x){ return x.id === id; });
+      if (w) { w.done = !w.done; saveCouple(); renderCpWish(); }
+    }
+    function delWish(id) {
+      couple.wishes = couple.wishes.filter(function(x){ return x.id !== id; });
+      saveCouple();
+      renderCpWish();
+    }
+
+    // —— 共同回忆（专属事件记录）——
+    function openCpEvent() {
+      closeMoreModal();
+      renderCpEvent();
+      document.getElementById('cpEventModal').classList.add('active');
+    }
+    function renderCpEvent() {
+      var body = document.getElementById('cpEventBody');
+      var html = '';
+      html += '<div class="cp-sub">记录你们一起走过的特别时刻</div>';
+      if (!couple.events.length) {
+        html += '<div class="cp-empty">还没有回忆，记下第一次约会、一起旅行… 的瞬间吧 📖</div>';
+      } else {
+        html += '<div class="evt-list">';
+        couple.events.slice().sort(function(a,b){ return b.timestamp - a.timestamp; }).forEach(function(ev) {
+          var d = new Date(ev.timestamp);
+          html += '<div class="evt-item">' +
+            '<div class="ei-head">' +
+              '<div class="ei-title">' + escapeHTML(ev.title) + '</div>' +
+              '<button class="ei-del" onclick="delEvent(' + ev.id + ')">✕</button>' +
+            '</div>' +
+            '<div class="ei-date">' + (d.getFullYear()) + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日' + '</div>' +
+            (ev.note ? '<div class="ei-note">' + escapeHTML(ev.note) + '</div>' : '') +
+          '</div>';
+        });
+        html += '</div>';
+      }
+      html += '<div class="evt-add-row">' +
+        '<input class="ei-title-in" id="evtTitle" placeholder="回忆标题，如：第一次旅行">' +
+        '<button class="cp-btn primary" onclick="addEvent()">记录</button>' +
+      '</div>' +
+      '<div class="evt-add-row">' +
+        '<textarea class="ei-note-in" id="evtNote" placeholder="写下那天的细节和心情…（可选）"></textarea>' +
+      '</div>';
+      body.innerHTML = html;
+    }
+    function addEvent() {
+      var title = (document.getElementById('evtTitle').value || '').trim();
+      if (!title) { showToast('请填写回忆标题'); return; }
+      var note = (document.getElementById('evtNote').value || '').trim();
+      couple.events.push({ id: Date.now(), title: title, note: note, timestamp: Date.now() });
+      saveCouple();
+      renderCpEvent();
+      showToast('已记录这段回忆 📖');
+    }
+    function delEvent(id) {
+      couple.events = couple.events.filter(function(x){ return x.id !== id; });
+      saveCouple();
+      renderCpEvent();
+    }
+
+    /* ===== Service Worker Registration (PWA) ===== */
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw.js').catch(function() {});
+      });
+    }
+
+    /* ===== Init ===== */
+    migrateLetters();
+    createBgStars();
+    createShootingStars();
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    renderEmotionSelector();
+    rebuildStars();
+    initShakeDetection();
+    renderCoupleBadge();
+    showGreeting();
+
+    /* 云端实时同步（已配置 Supabase 时启动；未配置则静默跳过） */
+    startCloudSync();
+
+    /* 旧数据迁移：补全新字段 + 星星配色改为情绪绑定（保留已有配色） */
+    function migrateLetters() {
+      var changed = false;
+      letters.forEach(function(l) {
+        if (l.starred === undefined) { l.starred = false; changed = true; }
+        if (l.pinned === undefined) { l.pinned = false; changed = true; }
+        if (l.tags === undefined) { l.tags = []; changed = true; }
+        if (!l.emotionLabel && l.emotionLevel) {
+          var emo = emotionByLevel(l.emotionLevel);
+          if (emo) l.emotionLabel = emo.label;
+          changed = true;
+        }
+        if (!l.starColors) {
+          // 老数据：给没有配色的生成情绪绑定配色
+          l.starColors = generateStarColors(l.id || Math.floor(Math.random() * 1e9), emotionByLabel(l.emotionLabel));
+          changed = true;
+        }
+      });
+      if (changed) saveLetters();
+    }
+  </script>
+</body>
+</html>
