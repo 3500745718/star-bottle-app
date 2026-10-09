@@ -346,7 +346,8 @@
     /* ===== 瓶子问候语 ===== */
     .greeting {
       max-width: 86vw;
-      margin-bottom: 26px;
+      margin-top: 7vh;
+      margin-bottom: 22px;
       padding: 10px 22px;
       border-radius: 26px;
       background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
@@ -2116,8 +2117,7 @@
     </div>
   </div>
 
-  <!-- Supabase 云端同步 SDK（若 SUPABASE_URL 未配置则不影响使用） -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <!-- 云端同步：GitHub Contents API，无需外部 SDK -->
 
   <script>
     /* ===== Emotion Data ===== */
@@ -2171,21 +2171,20 @@
     } catch(e) {}
 
     /* ==========================================================
-       ☁️ 云端实时同步（Supabase）
+       ☁️ 云端同步（GitHub 私有仓库存储）
        ----------------------------------------------------------
-       如果你只想单人本地使用，把 SUPABASE_URL 留空即可，一切照旧。
-       想两人共享同一个瓶子并实时同步：
-         1) 在 supabase.com 免费注册并新建项目
-         2) 建一张表 couple_data（见下方 READY 建表说明）
-         3) 把下面的 SUPABASE_URL / SUPABASE_KEY 填成你的值
-         4) 两人都用同一个 PAIR_ID（默认已是 'pair-001'）
+       数据存在你自己的 GitHub 私有仓库的一个 JSON 文件里，
+       通过 GitHub Contents API 读写。
+       优点：api.github.com 国内可达性好，免费、稳定、不限量。
        ========================================================== */
-    var SUPABASE_URL = 'https://srljnhslwrwzouvtzphf.supabase.co';  // 你的 Supabase 项目地址
-    var SUPABASE_KEY  = 'sb_publishable_eNTG5SOEeQQwzX4K9G18Hg_WNNkF_Wz';  // 你的 Supabase 公开密钥
-    var PAIR_ID = 'pair-001';       // 情侣配对标识：两个人填一样即可共享
+    var GH_USER  = '3500745718';            // GitHub 用户名
+    var GH_REPO  = 'star-bottle-data';      // 私有数据仓库名
+    var GH_TOKEN = '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'; // 只授权该仓库 Contents 读写的令牌
+    var GH_FILE  = 'couple-data.json';      // 数据文件名
     var CLOUD_ON = false;
-    var _sbClient = null;
     var _pushTimer = null;
+    var _ghSha = null;      // GitHub 文件版本号（写入时必须带上，防互相覆盖）
+    var _ghLastErr = '';
 
     function saveLetters() {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(letters)); } catch(e) { console.error('保存失败'); }
@@ -2196,41 +2195,32 @@
       cloudPushCouple();
     }
 
-    /* ---- 云端读写逻辑（Supabase 三方合并同步）---- */
-    function sbSdkReady() {
-      return !!(window.supabase && typeof window.supabase.createClient === 'function');
+    /* ---- GitHub API 读写工具 ---- */
+    function ghUrl() {
+      return 'https://api.github.com/repos/' + GH_USER + '/' + GH_REPO + '/contents/' + GH_FILE;
     }
-    // SDK 加载失败时（CDN 被墙等），自动尝试备用 CDN
-    function ensureSupabaseSdk(cb) {
-      if (sbSdkReady()) { cb(); return; }
-      var urls = [
-        'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js',
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js'
-      ];
-      var i = 0;
-      (function tryNext() {
-        if (i >= urls.length) return;
-        var s = document.createElement('script');
-        s.src = urls[i++];
-        s.onload = function() { if (sbSdkReady()) cb(); else tryNext(); };
-        s.onerror = function() { s.remove(); tryNext(); };
-        document.head.appendChild(s);
-      })();
+    function ghHeaders(json) {
+      var h = {
+        'Authorization': 'Bearer ' + GH_TOKEN,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      };
+      if (json) h['Content-Type'] = 'application/json';
+      return h;
     }
-    function cloudReady() {
-      if (!SUPABASE_URL || !SUPABASE_KEY) return false;
-      if (!sbSdkReady()) return false;
-      try {
-        if (!_sbClient) {
-          _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-          CLOUD_ON = true;
-        }
-      } catch(e) { CLOUD_ON = false; }
-      return CLOUD_ON && !!_sbClient;
+    // UTF-8 安全的 base64 编解码
+    function b64enc(str) { return btoa(unescape(encodeURIComponent(str))); }
+    function b64dec(b64) { return decodeURIComponent(escape(atob((b64 || '').replace(/\s/g, '')))); }
+    function ghErrText(st) {
+      if (st === 401 || st === 403) return '令牌无效';
+      if (st === 404) return '仓库或文件不存在';
+      if (st === 409 || st === 422) return '版本冲突';
+      return 'HTTP ' + st;
     }
+    function cloudReady() { return !!(GH_USER && GH_REPO && GH_TOKEN); }
 
     /* ---- 三方合并：base(上次看到的云端状态) + 本地 + 云端 ---- */
-    var CLOUD_BASE_KEY = 'star_bottle_cloud_base_v1';
+    var CLOUD_BASE_KEY = 'star_bottle_gh_base_v1';  // GitHub 版用全新基线：切换后双方本地数据完整合并上云，不会误删
     function loadCloudBase() {
       try { return JSON.parse(localStorage.getItem(CLOUD_BASE_KEY) || 'null'); } catch(e) { return null; }
     }
@@ -2332,34 +2322,51 @@
       function p(n) { return (n < 10 ? '0' : '') + n; }
       return p(d.getHours()) + ':' + p(d.getMinutes());
     }
-    // 从云端读一整行（letters + couple 一起返回；出错返回 undefined）
+    // 从云端读数据文件（文件不存在视为空；网络/权限错误返回 undefined）
     async function cloudFetchRow() {
-      var res = await _sbClient.from('couple_data')
-        .select('letters,couple')
-        .eq('pair_id', PAIR_ID)
-        .maybeSingle();
-      if (res.error) { console.warn('云端读取失败', res.error.message); return undefined; }
-      return res.data || { letters: [], couple: {} };
+      _ghLastErr = '';
+      var res;
+      try {
+        res = await fetch(ghUrl(), { headers: ghHeaders() });
+      } catch(e) { _ghLastErr = '网络'; return undefined; }
+      if (res.status === 404) { _ghSha = null; return { letters: [], couple: {} }; }
+      if (!res.ok) { _ghLastErr = ghErrText(res.status); console.warn('云端读取失败', res.status); return undefined; }
+      try {
+        var j = await res.json();
+        _ghSha = j.sha;
+        var data = JSON.parse(b64dec(j.content));
+        return (data && typeof data === 'object') ? data : { letters: [], couple: {} };
+      } catch(e) { _ghLastErr = '数据解析失败'; return undefined; }
     }
-    // 三方合并后写入云端，并应用到本地
+    // 三方合并后写入云端，并应用到本地（409 版本冲突自动重读重试）
     async function cloudPushRow() {
       if (!cloudReady()) return;
       setSyncStatus('☁ 同步中…');
-      try {
-        var remote = await cloudFetchRow();
-        if (remote === undefined) { setSyncStatus('☁ 同步失败', true); return; }
-        var merged = computeMergedState(loadCloudBase(), remote);
-        var up = await _sbClient.from('couple_data').upsert(
-          { pair_id: PAIR_ID, letters: merged.letters, couple: merged.couple, updated_at: new Date().toISOString() },
-          { onConflict: 'pair_id' }
-        );
-        if (up.error) { console.warn('云端写入失败', up.error.message); setSyncStatus('☁ 同步失败', true); return; }
-        saveCloudBase(merged);
-        applyStateLocally(merged);
-        setSyncStatus('☁ 已同步 · ' + _hm());
-      } catch(e) { setSyncStatus('☁ 同步失败', true); }
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          var remote = await cloudFetchRow();
+          if (remote === undefined) { setSyncStatus('☁ 同步失败 · ' + (_ghLastErr || '网络'), true); return; }
+          var merged = computeMergedState(loadCloudBase(), remote);
+          var payload = { message: 'star-bottle sync ' + new Date().toISOString(), content: b64enc(JSON.stringify(merged)) };
+          if (_ghSha) payload.sha = _ghSha;
+          var up = await fetch(ghUrl(), { method: 'PUT', headers: ghHeaders(true), body: JSON.stringify(payload) });
+          if (up.status === 409 || up.status === 422) {
+            // 对方刚刚也写入了 → 等一下重读云端、重新合并再试
+            await new Promise(function(r) { setTimeout(r, 400); });
+            continue;
+          }
+          if (!up.ok) { console.warn('云端写入失败', up.status); setSyncStatus('☁ 同步失败 · ' + ghErrText(up.status), true); return; }
+          var uj = await up.json();
+          if (uj.content && uj.content.sha) _ghSha = uj.content.sha;
+          saveCloudBase(merged);
+          applyStateLocally(merged);
+          setSyncStatus('☁ 已同步 · ' + _hm());
+          return;
+        } catch(e) { console.warn('同步异常', e); setSyncStatus('☁ 同步失败 · 网络', true); return; }
+      }
+      setSyncStatus('☁ 同步失败 · 冲突', true);
     }
-    // 从云端拉整行并应用（轮询 / 实时回调用）
+    // 从云端拉数据并应用（轮询用）
     async function cloudPullRow() {
       if (!cloudReady()) return;
       try {
@@ -2370,37 +2377,23 @@
         if (applyStateLocally(merged)) setSyncStatus('☁ 收到对方的更新 · ' + _hm());
       } catch(e) {}
     }
-    // 推送当前 letters / couple（防抖合并，等 SDK 就绪）
+    // 推送当前 letters / couple（防抖合并）
     function cloudPushLetters() { scheduleCloudPush(); }
     function cloudPushCouple() { scheduleCloudPush(); }
     function scheduleCloudPush() {
-      if (!SUPABASE_URL || !SUPABASE_KEY) return;
+      if (!cloudReady()) return;
       if (_pushTimer) clearTimeout(_pushTimer);
-      _pushTimer = setTimeout(function() {
-        ensureSupabaseSdk(function() { cloudPushRow(); });
-      }, 600);
+      _pushTimer = setTimeout(function() { cloudPushRow(); }, 600);
     }
-    // 启动云端同步：首次推送 + 实时订阅 + 轮询兜底
+    // 启动云端同步：首次推送 + 10 秒轮询拉取
     function startCloudSync() {
-      if (!SUPABASE_URL || !SUPABASE_KEY) { setSyncStatus(''); return; }
-      ensureSupabaseSdk(function() {
-        if (!cloudReady()) return;
-        setSyncStatus('☁ 同步中…');
-        cloudPushRow().then(function() {
-          // 订阅该行的实时变更（需在 Supabase 里为 couple_data 开启 Realtime）
-          try {
-            _sbClient.channel('star-bottle-' + PAIR_ID)
-              .on('postgres_changes',
-                  { event: '*', schema: 'public', table: 'couple_data', filter: 'pair_id=eq.' + PAIR_ID },
-                  function() { cloudPullRow(); })
-              .subscribe();
-          } catch(e) {}
-        });
-        // 轮询兜底：即使没开 Realtime，10 秒内也能收到对方的更新
-        setInterval(function() {
-          if (document.visibilityState === 'visible') cloudPullRow();
-        }, 10000);
-      });
+      if (!cloudReady()) { setSyncStatus(''); return; }
+      CLOUD_ON = true;
+      setSyncStatus('☁ 同步中…');
+      cloudPushRow();
+      setInterval(function() {
+        if (document.visibilityState === 'visible') cloudPullRow();
+      }, 10000);
     }
     // 计算在一起天数（当天也算一天）
     function daysTogether() {
@@ -4739,7 +4732,7 @@
     renderCoupleBadge();
     showGreeting();
 
-    /* 云端实时同步（已配置 Supabase 时启动；未配置则静默跳过） */
+    /* 云端同步启动（已配置 GitHub 仓库时启动；未配置则静默跳过） */
     startCloudSync();
 
     /* 旧数据迁移：补全新字段 + 星星配色改为情绪绑定（保留已有配色） */
