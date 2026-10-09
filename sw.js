@@ -1,4 +1,4 @@
-const CACHE = 'star-bottle-v9';
+const CACHE = 'star-bottle-v10';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
