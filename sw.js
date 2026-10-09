@@ -1,4 +1,4 @@
-const CACHE = 'star-bottle-v7';
+const CACHE = 'star-bottle-v8';
 const ASSETS = [
   './manifest.json',
   './icon-192.png',
@@ -72,4 +72,3 @@ self.addEventListener('fetch', function(e) {
     })
   );
 });
-
