@@ -2668,16 +2668,16 @@
         '<span class="sign-lead">今日宜：</span>' + todaySign().join(' · ');
 
       // 第6行：统计 + 倒计时
-      // var streak = recordStreak();
-      // var hol = nextHolidayInfo();
-      // var parts = [];
-      // var starPart = '✦ <b>' + letters.length + '</b> 颗星';
-      // parts.push(starPart);
-      // if (streak > 0) parts.push('连记 <b>' + streak + '</b> 天');
-      // if (hol) {
-      //   if (hol.days === 0) parts.push(hol.name + '就是今天 🎉');
-      //   else parts.push('距' + hol.name + ' <b>' + hol.days + '</b> 天');
-      // }
+      var streak = recordStreak();
+      var hol = nextHolidayInfo();
+      var parts = [];
+      var starPart = '✦ <b>' + letters.length + '</b> 颗星';
+      parts.push(starPart);
+      if (streak > 0) parts.push('连记 <b>' + streak + '</b> 天');
+      if (hol) {
+        if (hol.days === 0) parts.push(hol.name + '就是今天 🎉');
+        else parts.push('距' + hol.name + ' <b>' + hol.days + '</b> 天');
+      }
       document.getElementById('statsText').innerHTML = parts.join('<span class="stats-sep">·</span>');
     }
 
@@ -2685,7 +2685,7 @@
     function createBgStars() {
       var container = document.getElementById('starsBg');
       container.innerHTML = '';
-      var count = 260;   // 更密集、更璀璨的星空
+      var count = 280;   // 更密集、更璀璨的星空
       for (var i = 0; i < count; i++) {
         var star = document.createElement('div');
         // 随机颜色：白 / 暖黄 / 淡蓝
