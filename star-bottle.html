@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a1721">
-  <title>星星瓶子 ✦ 记忆</title>
+  <title> 小耿✦星星瓶子 </title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -346,7 +346,7 @@
     /* ===== 瓶子问候语 ===== */
     .greeting {
       max-width: 86vw;
-      margin-top: 7vh;
+      margin-top: max(140px, 12vh);
       margin-bottom: 22px;
       padding: 10px 22px;
       border-radius: 26px;
@@ -428,6 +428,7 @@
     .overlay, .modal {
       position: fixed;
       inset: 0;
+      padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
       z-index: 100;
       opacity: 0;
       pointer-events: none;
@@ -564,6 +565,7 @@
       font-variant-numeric: tabular-nums;
     }
     .close-btn {
+      position: relative;
       width: 32px;
       height: 32px;
       border-radius: 50%;
@@ -578,6 +580,7 @@
       transition: all 0.2s;
       flex-shrink: 0;
     }
+    .close-btn::after { content: ''; position: absolute; inset: -14px; }
     .close-btn:active { background: rgba(107,93,79,0.2); transform: scale(0.92); }
 
     .emotion-section { margin-bottom: 16px; }
@@ -1890,7 +1893,7 @@
     <!-- 主界面下部：在一起天数 + 情侣快捷入口 -->
     <div class="home-lower">
       <div class="couple-badge" id="coupleBadge" style="display:none;">
-        <div class="day-heart"><span class="heart">❤</span>在一起第 <span class="day-num" id="togetherDays">0</span> 天</div>
+        <div class="day-heart"><span class="heart">❤</span>在一起的第 <span class="day-num" id="togetherDays">0</span> 天</div>
         <div class="next-anni" id="nextAnni"></div>
       </div>
       <div class="home-quick">
@@ -1920,7 +1923,7 @@
     </div>
 
     <div class="hint" id="hint">轻触瓶身</div>
-    <button class="shake-btn" id="shakeBtn">摇一摇 ✨</button>
+    <button class="shake-btn" id="shakeBtn">来杯好茶摇一摇~ ✨</button>
   </div>
 
   <!-- Menu Overlay -->
@@ -1953,11 +1956,11 @@
         <button class="close-btn" id="closeWrite">&times;</button>
       </div>
       <div class="emotion-section">
-        <div class="section-label">今天的心情</div>
+        <div class="section-label">小耿今天的心情怎么样呀~</div>
         <div class="emotion-selector" id="emotionSelector"></div>
       </div>
       <div class="text-section">
-        <textarea id="letterText" placeholder="今天发生了什么……写下来，折成一颗星星。" maxlength="5000"></textarea>
+        <textarea id="letterText" placeholder="今天发生了什么……写下来，折成一颗星星,希望小耿多多分享!" maxlength="5000"></textarea>
       </div>
       <div class="emotion-section" style="margin-bottom:10px;">
         <div class="section-label">标签（可选，用逗号或空格分隔）</div>
@@ -2359,14 +2362,14 @@
             await new Promise(function(r) { setTimeout(r, 400); });
             continue;
           }
-          if (!up.ok) { console.warn('云端写入失败', up.status); setSyncStatus('☁ 同步失败 · ' + ghErrText(up.status), true); return; }
+          if (!up.ok) { console.warn('云端写入失败', up.status); setSyncStatus('☁ 同步失败，快去联系你的宝宝来救我！ · ' + ghErrText(up.status), true); return; }
           var uj = await up.json();
           if (uj.content && uj.content.sha) _ghSha = uj.content.sha;
           saveCloudBase(merged);
           applyStateLocally(merged);
-          setSyncStatus('☁ 已同步 · ' + _hm());
+          setSyncStatus('☁ 已和程可可同步成功！ · ' + _hm());
           return;
-        } catch(e) { console.warn('同步异常', e); setSyncStatus('☁ 同步失败 · 网络', true); return; }
+        } catch(e) { console.warn('同步异常', e); setSyncStatus('☁ 同步失败，快去联系你的宝宝来救我！ · 网络', true); return; }
       }
       setSyncStatus('☁ 同步失败 · 冲突', true);
     }
@@ -2378,7 +2381,7 @@
         if (remote === undefined) return;
         var merged = computeMergedState(loadCloudBase(), remote);
         saveCloudBase(merged);
-        if (applyStateLocally(merged)) setSyncStatus('☁ 收到对方的更新 · ' + _hm());
+        if (applyStateLocally(merged)) setSyncStatus('☁ 收到宝宝的更新啦，快来看看吧~ · ' + _hm());
       } catch(e) {}
     }
     // 推送当前 letters / couple（防抖合并）
@@ -2536,9 +2539,9 @@
     };
 
     // 今日小签词库（按日期固定，每天换一签）
-    var SIGN_ITEMS = ['写信','折星星','早睡','喝热水','一个大大的拥抱','说出想念','大笑一场','散步',
-      '听喜欢的歌','吃点甜的','放下烦恼','夸夸TA','早点休息','给TA发条消息','许个愿','原谅一件小事',
-      '深呼吸','晒太阳','整理房间','好好吃饭','买束花','看场电影','牵手散步','认真说晚安','记录小确幸'];
+    var SIGN_ITEMS = ['写信','折星星','早睡','喝热水','一个大大的拥抱','说出对程可可的想念','大笑一场','散步',
+      '听喜欢的歌','吃点甜的','放下烦恼','夸夸程可可','早点休息','给程可可发条消息','许个愿','原谅一件小事',
+      '深呼吸','晒晒太阳','整理一下房间','好好吃饭','买束花','看场电影','和程可可牵手散步','跟程可可打视频','与程可可认真说晚安','记录小确幸'];
     function todaySign() {
       var now = new Date();
       var seed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
@@ -2722,7 +2725,7 @@
 
     // 流星特效：周期性地从天空划过
     function createShootingStars() {
-      var count = 3;  // 3 颗流星，间隔错开
+      var count = 4;  // 3 颗流星，间隔错开
       for (var i = 0; i < count; i++) {
         var el = document.createElement('div');
         el.className = 'shooting-star';
@@ -3614,7 +3617,7 @@
 
     /* ===== Delete ===== */
     function askDelete(letterId) {
-      openConfirm('删除这封信？', '删除后，瓶子里的这颗星星也会一起消失。此操作不可恢复。', '删除', true);
+      openConfirm('删除这封信？', '删除后，你和程可可就都看不见咯。此操作不可恢复。', '删除', true);
       confirmCallback = function() { doDelete(letterId); };
     }
     function doDelete(letterId) {
@@ -4361,16 +4364,16 @@
 
     // 瓶子问候语：每次进入随机展示一句
     var GREETINGS = [
-      '今天心情怎么样呀？✨',
-      '晓冉，今天有什么有趣的事想分享吗？',
-      '晓冉，此刻的心情想折成星星吗？',
-      '把今天的小确幸，悄悄放进瓶子里吧 💛',
-      '晓冉，我们的每一天都值得收藏 ✦',
-      '今天过得怎么样？想聊的话我一直在',
-      '有什么心事，都可以写进这颗星星里',
-      '窗外风清月朗，此刻你在想谁呢？',
+      '哈喽耿晓冉，今天心情怎么样呀？✨',
+      '小耿，今天有什么有趣的事想分享吗？',
+      '小耿，此刻的心情想折成星星吗？',
+      '哈喽宝宝，把今天的小确幸，悄悄放进瓶子里吧 💛',
+      '耿晓冉，我们的每一天都值得收藏 ✦',
+      '宝宝你来啦，今天过得怎么样？想聊的话我一直在',
+      '耿晓冉有什么心事，都可以写进这颗星星里哦',
+      '窗外风清月朗，此刻小耿在想谁呢？',
       '一个小小的拥抱，送给你 💌',
-      '记得今天也要好好照顾自己哦',
+      '你好小耿，记得今天也要好好照顾自己哦',
       '想给你看看今天的星星，也看见了你',
       '把烦恼折进星星，把温暖留给自己',
     ];
@@ -4431,7 +4434,7 @@
       if (wishSub) {
         var done = couple.wishes.filter(function(w){ return w.done; }).length;
         var total = couple.wishes.length;
-        wishSub.textContent = total ? (done + '/' + total + ' 完成') : '许个愿吧';
+        wishSub.textContent = total ? (done + '/' + total + ' 完成') : '许个愿吧，反正程可可也不知道';
       }
       var evtBadge = document.getElementById('hqEventBadge');
       if (evtBadge) {
@@ -4440,7 +4443,7 @@
       }
       var evtSub = document.getElementById('hqEventSub');
       if (evtSub) {
-        evtSub.textContent = couple.events.length ? (couple.events.length + ' 条回忆') : '记一笔吧';
+        evtSub.textContent = couple.events.length ? (couple.events.length + ' 条回忆') : '记一笔吧，程可可挺关心的';
       }
     }
     function nextAnniversary() {
@@ -4498,7 +4501,7 @@
               '</div>';
 
       // 成就
-      html += '<div class="cp-sub">🏆 我们的成就</div>';
+      html += '<div class="cp-sub">🏆 我们的小成就</div>';
       html += '<div class="cp-achievements">' +
         '<div class="cp-ach-item"><div class="aa-icon">❤️</div><div class="aa-num">' + daysTogether() + '天</div><div class="aa-label">在一起</div></div>' +
         '<div class="cp-ach-item"><div class="aa-icon">⭐</div><div class="aa-num">' + letters.length + '</div><div class="aa-label">星星信件</div></div>' +
