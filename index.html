@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a1721">
-  <title>星星瓶子 ✦ 记忆</title>
+  <title> 小耿✦星星瓶子 </title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -1893,7 +1893,7 @@
     <!-- 主界面下部：在一起天数 + 情侣快捷入口 -->
     <div class="home-lower">
       <div class="couple-badge" id="coupleBadge" style="display:none;">
-        <div class="day-heart"><span class="heart">❤</span>在一起第 <span class="day-num" id="togetherDays">0</span> 天</div>
+        <div class="day-heart"><span class="heart">❤</span>在一起的第 <span class="day-num" id="togetherDays">0</span> 天</div>
         <div class="next-anni" id="nextAnni"></div>
       </div>
       <div class="home-quick">
@@ -1923,7 +1923,7 @@
     </div>
 
     <div class="hint" id="hint">轻触瓶身</div>
-    <button class="shake-btn" id="shakeBtn">摇一摇 ✨</button>
+    <button class="shake-btn" id="shakeBtn">来杯好茶摇一摇~ ✨</button>
   </div>
 
   <!-- Menu Overlay -->
@@ -1956,11 +1956,11 @@
         <button class="close-btn" id="closeWrite">&times;</button>
       </div>
       <div class="emotion-section">
-        <div class="section-label">今天的心情</div>
+        <div class="section-label">小耿今天的心情怎么样呀~</div>
         <div class="emotion-selector" id="emotionSelector"></div>
       </div>
       <div class="text-section">
-        <textarea id="letterText" placeholder="今天发生了什么……写下来，折成一颗星星。" maxlength="5000"></textarea>
+        <textarea id="letterText" placeholder="今天发生了什么……写下来，折成一颗星星，希望小耿多多分享！" maxlength="5000"></textarea>
       </div>
       <div class="emotion-section" style="margin-bottom:10px;">
         <div class="section-label">标签（可选，用逗号或空格分隔）</div>
@@ -2362,16 +2362,16 @@
             await new Promise(function(r) { setTimeout(r, 400); });
             continue;
           }
-          if (!up.ok) { console.warn('云端写入失败', up.status); setSyncStatus('☁ 同步失败 · ' + ghErrText(up.status), true); return; }
+          if (!up.ok) { console.warn('云端写入失败', up.status); setSyncStatus('☁ 同步失败，快去联系你的宝宝来救我！ · ' + ghErrText(up.status), true); return; }
           var uj = await up.json();
           if (uj.content && uj.content.sha) _ghSha = uj.content.sha;
           saveCloudBase(merged);
           applyStateLocally(merged);
-          setSyncStatus('☁ 已同步 · ' + _hm());
+          setSyncStatus('☁ 已和程可可同步成功！ · ' + _hm());
           return;
-        } catch(e) { console.warn('同步异常', e); setSyncStatus('☁ 同步失败 · 网络', true); return; }
+        } catch(e) { console.warn('同步异常', e); setSyncStatus('☁ 同步失败，快去联系你的宝宝来救我！ · 网络', true); return; }
       }
-      setSyncStatus('☁ 同步失败 · 冲突', true);
+      setSyncStatus('☁ 同步失败，快去联系你的宝宝来救我！ · 冲突', true);
     }
     // 从云端拉数据并应用（轮询用）
     async function cloudPullRow() {
@@ -2381,7 +2381,7 @@
         if (remote === undefined) return;
         var merged = computeMergedState(loadCloudBase(), remote);
         saveCloudBase(merged);
-        if (applyStateLocally(merged)) setSyncStatus('☁ 收到对方的更新 · ' + _hm());
+        if (applyStateLocally(merged)) setSyncStatus('☁ 收到了宝宝的更新，快来看看吧！ · ' + _hm());
       } catch(e) {}
     }
     // 推送当前 letters / couple（防抖合并）
@@ -4260,7 +4260,7 @@
       if (isMobile) {
         document.body.classList.remove('is-desktop');
         var hint = document.getElementById('hint');
-        if (hint) hint.textContent = '轻触瓶身 · 摇晃手机，星星会晃荡';
+        if (hint) hint.textContent = '轻触瓶身 · 摇晃手机，星星动起来哦~';
       } else {
         document.body.classList.add('is-desktop');
       }
@@ -4364,16 +4364,16 @@
 
     // 瓶子问候语：每次进入随机展示一句
     var GREETINGS = [
-      '今天心情怎么样呀？✨',
-      '晓冉，今天有什么有趣的事想分享吗？',
-      '晓冉，此刻的心情想折成星星吗？',
-      '把今天的小确幸，悄悄放进瓶子里吧 💛',
-      '晓冉，我们的每一天都值得收藏 ✦',
-      '今天过得怎么样？想聊的话我一直在',
-      '有什么心事，都可以写进这颗星星里',
-      '窗外风清月朗，此刻你在想谁呢？',
+      '哈喽耿晓冉，今天心情怎么样呀？✨',
+      '小耿，今天有什么有趣的事想分享吗？',
+      '小耿，此刻的心情想折成星星吗？',
+      '哈喽宝宝，把今天的小确幸，悄悄放进瓶子里吧 💛',
+      '耿晓冉，我们的每一天都值得收藏 ✦',
+      '宝宝你来啦，今天过得怎么样？想聊的话我一直在',
+      '耿晓冉有什么心事，都可以写进这颗星星里哦',
+      '窗外风清月朗，此刻小耿在想谁呢？',
       '一个小小的拥抱，送给你 💌',
-      '记得今天也要好好照顾自己哦',
+      '你好小耿，记得今天也要好好照顾自己哦',
       '想给你看看今天的星星，也看见了你',
       '把烦恼折进星星，把温暖留给自己',
     ];
